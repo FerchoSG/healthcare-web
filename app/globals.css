@@ -1,0 +1,149 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* App shell */
+  --app-bg: #F8FAFC;
+  --neon-green: #008BB0;
+  --neon-green-bg: #E0F4F9;
+  --neon-green-text: #006d8e;
+
+  /* Base tokens */
+  --background: #F8FAFC;
+  --foreground: #0f172a;
+  --card: #FFFFFF;
+  --card-foreground: #0f172a;
+  --popover: #FFFFFF;
+  --popover-foreground: #0f172a;
+  --primary: #008BB0;
+  --primary-foreground: #FFFFFF;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #E0F4F9;
+  --accent-foreground: #006d8e;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #e2e8f0;
+  --input: #f1f5f9;
+  --ring: #008BB0;
+  --chart-1: #008BB0;
+  --chart-2: #E5E7EB;
+  --chart-3: #6B7280;
+  --chart-4: #F59E0B;
+  --chart-5: #EF4444;
+  --radius: 0.5rem;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #008BB0;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #008BB0;
+}
+
+.dark {
+  --app-bg: #1A1C1E;
+  --neon-green: #00AACC;
+  --neon-green-bg: #0A2533;
+  --neon-green-text: #00AACC;
+
+  --background: #1A1C1E;
+  --foreground: oklch(0.96 0 0);
+  --card: #25272B;
+  --card-foreground: oklch(0.96 0 0);
+  --popover: #25272B;
+  --popover-foreground: oklch(0.96 0 0);
+  --primary: #00AACC;
+  --primary-foreground: #FFFFFF;
+  --secondary: #2E3035;
+  --secondary-foreground: oklch(0.96 0 0);
+  --muted: #2E3035;
+  --muted-foreground: oklch(0.62 0 0);
+  --accent: #0A2533;
+  --accent-foreground: #00AACC;
+  --destructive: #7F1D1D;
+  --destructive-foreground: #FCA5A5;
+  --border: #2E3035;
+  --input: #2E3035;
+  --ring: #00AACC;
+  --chart-1: #00AACC;
+  --chart-2: #3A3D42;
+  --chart-3: #6B7280;
+  --chart-4: #F59E0B;
+  --chart-5: #EF4444;
+  --sidebar: #25272B;
+  --sidebar-foreground: oklch(0.96 0 0);
+  --sidebar-primary: #00AACC;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #2E3035;
+  --sidebar-accent-foreground: oklch(0.96 0 0);
+  --sidebar-border: #2E3035;
+  --sidebar-ring: #00AACC;
+}
+
+@theme inline {
+  --font-sans: 'Plus Jakarta Sans', 'Geist', 'Geist Fallback', sans-serif;
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-neon-green: var(--neon-green);
+  --color-neon-green-bg: var(--neon-green-bg);
+  --color-neon-green-text: var(--neon-green-text);
+  --color-app-bg: var(--app-bg);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background-color: var(--app-bg);
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+}
+
+/* Hide scrollbar but keep scroll functionality */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
