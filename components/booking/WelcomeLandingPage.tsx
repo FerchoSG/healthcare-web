@@ -430,7 +430,7 @@ export function WelcomeLandingPage({ onBook }: WelcomeLandingPageProps) {
             <div className="flex flex-wrap items-center gap-6 text-sm">
               <span className="flex items-center gap-2">
                 <MapPin size={14} className="text-[#008BB0] shrink-0" />
-                San José, Costa Rica
+                San Carlos, Alajuela, Costa Rica
               </span>
               <span className="flex items-center gap-2">
                 <Phone size={14} className="text-[#008BB0] shrink-0" />
