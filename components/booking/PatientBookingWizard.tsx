@@ -609,7 +609,7 @@ export function PatientBookingWizard({ onHome }: { onHome: () => void }) {
       {step > 1 && (
         <button
           onClick={back}
-          className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 px-3 py-2 rounded-md hover:bg-slate-100 transition-all"
+          className="flex items-center gap-1.5 text-xs font-semibold text-white px-3 py-2 rounded-md bg-slate-700 border border-slate-700 hover:bg-slate-800 transition-all"
         >
           <ChevronLeft size={14} />
           Atrás
@@ -685,7 +685,7 @@ export function PatientBookingWizard({ onHome }: { onHome: () => void }) {
             {step > 1 && (
               <button
                 onClick={back}
-                className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 px-4 py-2 rounded-md border border-slate-200 hover:bg-slate-100 transition-all"
+                className="flex items-center gap-1.5 text-xs font-semibold text-white px-4 py-2 rounded-md bg-slate-700 border border-slate-700 hover:bg-slate-800 transition-all"
               >
                 <ChevronLeft size={14} />Atrás
               </button>
