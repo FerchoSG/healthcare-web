@@ -10,13 +10,30 @@ interface AuthScreenProps {
   onLogin: (user: AuthUser) => void
 }
 
-const DEMO_USERS = [
+const DEMO_CLINIC_ID = "00000000-0000-0000-0000-000000000001"
+const DEMO_CLINIC_NAME = "CitaBox Demo Clinic"
+
+const DEMO_USERS: Array<{
+  label: string
+  email: string
+  password: string
+  description: string
+  initial: string
+  mockUser: AuthUser
+}> = [
   {
     label: "Log in as Admin",
     email: "admin@clinica.cr",
     password: "admin123",
     description: "Full access — KPIs, Billing, Settings",
     initial: "A",
+    mockUser: {
+      id: "demo-admin-001",
+      name: "Admin User",
+      email: "admin@clinica.cr",
+      role: "ADMIN",
+      membership: { clinic_id: DEMO_CLINIC_ID, clinic_name: DEMO_CLINIC_NAME, role: "ADMIN" as const, specialty: null },
+    },
   },
   {
     label: "Log in as Receptionist",
@@ -24,6 +41,13 @@ const DEMO_USERS = [
     password: "staff123",
     description: "Front Desk, Calendar, Patients",
     initial: "R",
+    mockUser: {
+      id: "demo-staff-001",
+      name: "Receptionist User",
+      email: "staff@clinica.cr",
+      role: "STAFF",
+      membership: { clinic_id: DEMO_CLINIC_ID, clinic_name: DEMO_CLINIC_NAME, role: "STAFF" as const, specialty: null },
+    },
   },
   {
     label: "Log in as Doctor",
@@ -31,6 +55,13 @@ const DEMO_USERS = [
     password: "doctor123",
     description: "Schedule, Patients, Medical Records",
     initial: "D",
+    mockUser: {
+      id: "demo-doctor-001",
+      name: "Doctor User",
+      email: "doctor@clinica.cr",
+      role: "DOCTOR",
+      membership: { clinic_id: DEMO_CLINIC_ID, clinic_name: DEMO_CLINIC_NAME, role: "DOCTOR" as const, specialty: "General Medicine" },
+    },
   },
 ]
 
@@ -88,8 +119,9 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
     doLogin(loginEmail, loginPassword)
   }
 
-  const handleDemoLogin = (email: string, password: string) => {
-    doLogin(email, password)
+  const handleDemoLogin = (mockUser: AuthUser) => {
+    setClinicId(mockUser.membership?.clinic_id ?? null)
+    onLogin(mockUser)
   }
 
   const handleRegister = (e: React.FormEvent) => {
@@ -257,11 +289,11 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
 
               {/* Demo Access */}
               <div className="space-y-2.5">
-                {DEMO_USERS.map(({ label, email, password, description, initial }) => (
+                {DEMO_USERS.map(({ label, email, description, initial, mockUser }) => (
                   <button
                     key={email}
                     disabled={loading}
-                    onClick={() => handleDemoLogin(email, password)}
+                    onClick={() => handleDemoLogin(mockUser)}
                     className="w-full flex items-center justify-between px-5 py-3.5 rounded-md border border-border bg-white shadow-sm hover:border-[var(--neon-green)] hover:bg-[var(--neon-green-bg)] group transition-all disabled:opacity-60"
                   >
                     <div className="text-left">
