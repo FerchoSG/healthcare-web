@@ -1,12 +1,16 @@
 "use client"
 
-import { APPOINTMENTS, LINE_CHART_DATA, PATIENTS } from "@/lib/store"
+import { useState, useEffect, useCallback } from "react"
+import { LINE_CHART_DATA, PATIENTS } from "@/lib/store"
+import { AppointmentStatus, type Appointment } from "@/types/api"
+import { fetchTodayAppointments } from "@/services/appointments.service"
 import {
   Users,
   DollarSign,
   TrendingUp,
   ArrowUpRight,
   CalendarCheck,
+  Loader2,
 } from "lucide-react"
 import {
   LineChart,
@@ -42,11 +46,52 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null
 }
 
+const statusBadge: Record<AppointmentStatus, { label: string; cls: string }> = {
+  [AppointmentStatus.PENDING]: { label: "Pending", cls: "text-muted-foreground bg-muted" },
+  [AppointmentStatus.CONFIRMED]: { label: "Confirmed", cls: "text-blue-700 bg-blue-50 dark:bg-blue-950 dark:text-blue-400" },
+  [AppointmentStatus.WAITING]: { label: "Waiting", cls: "text-amber-700 bg-amber-50 dark:bg-amber-950 dark:text-amber-400" },
+  [AppointmentStatus.IN_CONSULTATION]: { label: "Active", cls: "text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-400" },
+  [AppointmentStatus.COMPLETED]: { label: "Done", cls: "text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-400" },
+  [AppointmentStatus.CANCELLED]: { label: "Cancelled", cls: "text-red-700 bg-red-50 dark:bg-red-950 dark:text-red-400" },
+}
+
+function getInitials(first: string, last: string) {
+  return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase()
+}
+
+function getAvatarColor(name: string) {
+  const COLORS = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#74b9ff", "#fd79a8"]
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  return COLORS[Math.abs(hash) % COLORS.length]
+}
+
+function formatTime(isoString: string) {
+  return new Date(isoString).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })
+}
+
 interface AdminDashboardProps {
   onViewPatients: () => void
 }
 
 export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [loadingAppts, setLoadingAppts] = useState(true)
+
+  const loadAppointments = useCallback(async () => {
+    try {
+      setLoadingAppts(true)
+      const data = await fetchTodayAppointments()
+      setAppointments(data)
+    } catch {
+      // Silently fail in the sidebar schedule — the receptionist dashboard is the primary view
+    } finally {
+      setLoadingAppts(false)
+    }
+  }, [])
+
+  useEffect(() => { loadAppointments() }, [loadAppointments])
+
   const totalRevenue = 102000
 
   return (
@@ -158,45 +203,56 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
         </div>
 
         {/* Today's Schedule */}
-        <div className="bg-white rounded-lg shadow-md p-5 border border-border flex flex-col">
+        <div className="bg-white dark:bg-card rounded-lg shadow-md p-5 border border-border flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-foreground">Today's Schedule</h3>
+            <h3 className="text-sm font-bold text-foreground">Today&apos;s Schedule</h3>
             <CalendarCheck size={15} className="text-muted-foreground" />
           </div>
-          <div className="flex flex-col gap-3 flex-1 overflow-y-auto">
-            {APPOINTMENTS.map((apt) => (
-              <div key={apt.id} className="flex items-center gap-3">
-                <div
-                  className="w-8 h-8 rounded-md flex items-center justify-center text-white text-[10px] font-bold shrink-0"
-                  style={{ backgroundColor: apt.avatarColor }}
-                >
-                  {apt.avatarInitials}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-foreground truncate">{apt.patientName}</p>
-                  <p className="text-[10px] text-muted-foreground">{apt.time} — {apt.reason}</p>
-                </div>
-                <span
-                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-md shrink-0 ${
-                    apt.status === "In Consultation"
-                      ? "text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-400"
-                      : apt.status === "Waiting"
-                      ? "text-amber-700 bg-amber-50 dark:bg-amber-950 dark:text-amber-400"
-                      : "text-muted-foreground bg-muted"
-                  }`}
-                >
-                  {apt.status === "In Consultation" ? "Active" : apt.status === "Waiting" ? "Waiting" : "Pending"}
-                </span>
-              </div>
-            ))}
-          </div>
+
+          {loadingAppts ? (
+            <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
+              <Loader2 size={16} className="animate-spin" />
+              <span className="text-xs">Loading…</span>
+            </div>
+          ) : appointments.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-8">No appointments today</p>
+          ) : (
+            <div className="flex flex-col gap-3 flex-1 overflow-y-auto">
+              {appointments.map((apt) => {
+                const name = `${apt.patient.first_name} ${apt.patient.last_name}`
+                const initials = getInitials(apt.patient.first_name, apt.patient.last_name)
+                const color = getAvatarColor(name)
+                const badge = statusBadge[apt.status] ?? statusBadge[AppointmentStatus.PENDING]
+
+                return (
+                  <div key={apt.id} className="flex items-center gap-3">
+                    <div
+                      className="w-8 h-8 rounded-md flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                      style={{ backgroundColor: color }}
+                    >
+                      {initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-foreground truncate">{name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {formatTime(apt.start_time)} — {apt.reason ?? apt.service?.name ?? "Appointment"}
+                      </p>
+                    </div>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md shrink-0 ${badge.cls}`}>
+                      {badge.label}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Row 4: Stats strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: "Appointments Today", value: "12", icon: <CalendarCheck size={14} />, badge: "+3" },
+          { label: "Appointments Today", value: String(appointments.length), icon: <CalendarCheck size={14} />, badge: `${appointments.length}` },
           { label: "Revenue This Month", value: "$24,890", icon: <TrendingUp size={14} />, badge: "+18.2%" },
           { label: "New Patients", value: "47", icon: <Users size={14} />, badge: "+8" },
         ].map((stat) => (

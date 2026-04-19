@@ -77,7 +77,7 @@ export function WelcomeLandingPage({ onBook }: WelcomeLandingPageProps) {
               <Smile size={16} className="text-white" />
             </div>
             <span className="font-bold text-lg tracking-tight text-slate-900">
-              Clínica DRC
+              CitaBox
             </span>
           </div>
 
@@ -153,7 +153,7 @@ export function WelcomeLandingPage({ onBook }: WelcomeLandingPageProps) {
             {/* Right image placeholder */}
             <div className="relative flex justify-center lg:justify-end">
               <div className="w-full max-w-md aspect-[4/5] overflow-hidden shadow-lg">
-                <img src="clinica-06.jpg" alt="Clínica DRC" className="w-full h-full object-cover" />
+                <img src="clinica-06.jpg" alt="CitaBox" className="w-full h-full object-cover" />
               </div>
               {/* Decorative dot */}
               <div className="absolute -bottom-4 -left-4 w-20 h-20  bg-[#008BB0]/10 blur-xl hidden lg:block" />
@@ -378,7 +378,7 @@ export function WelcomeLandingPage({ onBook }: WelcomeLandingPageProps) {
                 <div className="w-8 h-8 rounded-full bg-[#008BB0] flex items-center justify-center">
                   <Smile size={16} className="text-white" />
                 </div>
-                <span className="font-bold text-white text-lg tracking-tight">Clínica DRC</span>
+                <span className="font-bold text-white text-lg tracking-tight">CitaBox</span>
               </div>
               <p className="text-sm leading-relaxed mb-6 max-w-[220px]">
                 Con bloques de atención personalizada, construimos sonrisas sin esfuerzo.
@@ -438,11 +438,11 @@ export function WelcomeLandingPage({ onBook }: WelcomeLandingPageProps) {
               </span>
               <span className="flex items-center gap-2">
                 <Mail size={14} className="text-[#008BB0] shrink-0" />
-                info@clinicadrc.cr
+                info@citabox.app
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              © 2026 Clínica DRC. Todos los derechos reservados.
+              © 2026 CitaBox. Todos los derechos reservados.
             </p>
           </div>
         </div>

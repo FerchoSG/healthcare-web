@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
   ChevronLeft,
   ChevronRight,
@@ -17,28 +17,25 @@ import {
   Phone,
   Clock,
   Loader2,
+  AlertCircle,
+  X,
 } from "lucide-react"
+import type {
+  ServiceSummary,
+  DoctorSummary,
+  TimeSlot,
+  BookingConfirmation,
+} from "@/types/api"
+import {
+  getServices,
+  getDoctors,
+  getAvailableSlots,
+  createBooking,
+} from "@/services/booking.service"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Service {
-  id: string
-  icon: React.ReactNode
-  label: string
-  description: string
-  duration: string
-  price: string
-}
-
-interface Doctor {
-  id: string
-  name: string
-  specialty: string
-  initials: string
-  color: string
-}
-
-export interface BookingData {
+export interface BookingFormData {
   serviceId: string
   doctorId: string
   date: string
@@ -49,36 +46,72 @@ export interface BookingData {
   whatsapp: string
 }
 
-// ─── Static Data ──────────────────────────────────────────────────────────────
-
-const SERVICES: Service[] = [
-  { id: "checkup",   icon: <Stethoscope size={20} />, label: "General Checkup & Cleaning", description: "Complete oral exam + professional cleaning",  duration: "60 min", price: "₡18,000" },
-  { id: "whitening", icon: <Sparkles size={20} />,    label: "Teeth Whitening",             description: "Professional LED whitening treatment",         duration: "90 min", price: "₡35,000" },
-  { id: "consult",   icon: <ShieldCheck size={20} />, label: "First Consultation",          description: "Meet the doctor, X-ray & treatment plan",      duration: "45 min", price: "₡12,000" },
-  { id: "ortho",     icon: <Smile size={20} />,       label: "Orthodontics / Braces",       description: "Evaluation for braces or clear aligners",      duration: "60 min", price: "₡15,000" },
-  { id: "implant",   icon: <FlaskConical size={20} />,label: "Dental Implant Consult",      description: "Eligibility assessment & cost breakdown",      duration: "45 min", price: "₡12,000" },
-]
-
-const DOCTORS: Doctor[] = [
-  { id: "any",      name: "Any Available", specialty: "We'll match you",         initials: "?",  color: "#CBD5E1" },
-  { id: "carlos",   name: "Dr. Carlos M.", specialty: "General & Cosmetic",      initials: "CM", color: "#5EEAD4" },
-  { id: "martinez", name: "Dr. Martinez",  specialty: "Oral Surgery & Implants", initials: "MT", color: "#7DD3FC" },
-  { id: "lucia",    name: "Dra. Lucia V.", specialty: "Orthodontics",            initials: "LV", color: "#FDE68A" },
-]
-
-const TIME_SLOTS = [
-  "08:00 AM","08:30 AM","09:00 AM","09:30 AM","10:00 AM","10:30 AM",
-  "11:00 AM","11:30 AM","02:00 PM","02:30 PM","03:00 PM","03:30 PM",
-  "04:00 PM","04:30 PM","05:00 PM",
-]
-const UNAVAILABLE = new Set(["09:00 AM","10:30 AM","03:00 PM"])
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const STEP_LABELS = ["Service","Date","Info","Review"]
-const TODAY = new Date(2026, 2, 12)
+const TODAY = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d })()
+const AVATAR_COLORS = ["#5EEAD4", "#7DD3FC", "#FDE68A", "#DDA0DD", "#96CEB4", "#FF6B6B", "#4ECDC4"]
 
-const EMPTY_BOOKING: BookingData = {
+const EMPTY_BOOKING: BookingFormData = {
   serviceId: "", doctorId: "any", date: "", time: "",
   firstName: "", lastName: "", cedula: "", whatsapp: "",
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getDoctorColor(index: number): string {
+  return AVATAR_COLORS[index % AVATAR_COLORS.length]
+}
+
+function getDoctorInitials(doc: DoctorSummary): string {
+  return `${doc.first_name?.[0] ?? ""}${doc.last_name?.[0] ?? ""}`.toUpperCase()
+}
+
+function formatPrice(price: number): string {
+  return `₡${price.toLocaleString("es-CR")}`
+}
+
+function formatDuration(minutes: number): string {
+  return `${minutes} min`
+}
+
+function formatDateShort(iso: string): string | null {
+  if (!iso) return null
+  const [y, m, d] = iso.split("-")
+  return new Date(+y, +m - 1, +d).toLocaleDateString("es-CR", { weekday: "short", month: "short", day: "numeric" })
+}
+
+function formatDateLong(iso: string): string {
+  if (!iso) return "—"
+  const [y, m, d] = iso.split("-")
+  return new Date(+y, +m - 1, +d).toLocaleDateString("es-CR", { weekday: "long", month: "long", day: "numeric" })
+}
+
+function formatSlotTime(time: string): string {
+  const [h, m] = time.split(":").map(Number)
+  const ampm = h >= 12 ? "PM" : "AM"
+  const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h
+  return `${String(hour12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${ampm}`
+}
+
+function getDoctorDisplayName(doc: DoctorSummary): string {
+  if (doc.id === "any") return "Any Available"
+  return `Dr. ${doc.first_name} ${doc.last_name?.[0] ?? ""}.`
+}
+
+function getServiceIcon(name: string): React.ReactNode {
+  const n = name.toLowerCase()
+  if (n.includes("check") || n.includes("clean") || n.includes("limpieza") || n.includes("general"))
+    return <Stethoscope size={20} />
+  if (n.includes("whiten") || n.includes("blanqueamiento") || n.includes("estétic"))
+    return <Sparkles size={20} />
+  if (n.includes("consult") || n.includes("primera") || n.includes("evaluación"))
+    return <ShieldCheck size={20} />
+  if (n.includes("ortho") || n.includes("braces") || n.includes("ortodon"))
+    return <Smile size={20} />
+  if (n.includes("implant"))
+    return <FlaskConical size={20} />
+  return <Stethoscope size={20} />
 }
 
 // ─── Sub-Components (defined OUTSIDE main component to prevent remount) ────────
@@ -137,36 +170,99 @@ function MiniCalendar({ selected, onSelect }: { selected: string; onSelect: (d: 
   )
 }
 
-function DoctorGrid({ selected, onSelect, compact = false }: { selected: string; onSelect: (id: string) => void; compact?: boolean }) {
+function DoctorGrid({ doctors, selected, onSelect, compact = false, loading = false }: {
+  doctors: DoctorSummary[]
+  selected: string
+  onSelect: (id: string) => void
+  compact?: boolean
+  loading?: boolean
+}) {
+  const ANY_OPTION: DoctorSummary = { id: "any", first_name: "Any", last_name: "Available", specialty: "We'll match you" }
+  const allDoctors = [ANY_OPTION, ...doctors]
+
+  if (loading) {
+    return (
+      <div className={compact ? "grid grid-cols-4 gap-2" : "flex gap-3 overflow-x-auto pb-1"}>
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="flex flex-col items-center gap-1.5 shrink-0">
+            <div className="w-14 h-14 rounded-full bg-slate-100 animate-pulse" />
+            <div className="w-14 h-2.5 bg-slate-100 rounded animate-pulse mt-1" />
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className={compact ? "grid grid-cols-4 gap-2" : "flex gap-3 overflow-x-auto pb-1"}>
-      {DOCTORS.map(doc => (
-        <button
-          key={doc.id}
-          onClick={() => onSelect(doc.id)}
-          className="flex flex-col items-center gap-1.5 shrink-0 transition-all active:scale-95"
-        >
-          <div
-            className={[
-              "w-14 h-14 rounded-full flex items-center justify-center text-sm font-bold border-[3px] transition-all",
-              selected === doc.id ? "border-teal-600 scale-105 shadow-lg" : "border-transparent opacity-80 hover:opacity-100",
-            ].join(" ")}
-            style={{ backgroundColor: doc.color, color: "#1e293b" }}
-          >{doc.initials}</div>
-          <div className="text-center w-16">
-            <div className="text-[11px] font-semibold text-slate-700 truncate">{doc.name.split(" ")[0]} {doc.name.split(" ")[1] ?? ""}</div>
-            <div className="text-[10px] text-slate-400 leading-tight truncate">{doc.specialty.split(" ")[0]}</div>
-          </div>
-        </button>
-      ))}
+      {allDoctors.map((doc, idx) => {
+        const color = doc.id === "any" ? "#CBD5E1" : getDoctorColor(idx - 1)
+        const initials = doc.id === "any" ? "?" : getDoctorInitials(doc)
+        return (
+          <button
+            key={doc.id}
+            onClick={() => onSelect(doc.id)}
+            className="flex flex-col items-center gap-1.5 shrink-0 transition-all active:scale-95"
+          >
+            <div
+              className={[
+                "w-14 h-14 rounded-full flex items-center justify-center text-sm font-bold border-[3px] transition-all",
+                selected === doc.id ? "border-teal-600 scale-105 shadow-lg" : "border-transparent opacity-80 hover:opacity-100",
+              ].join(" ")}
+              style={{ backgroundColor: color, color: "#1e293b" }}
+            >{initials}</div>
+            <div className="text-center w-16">
+              <div className="text-[11px] font-semibold text-slate-700 truncate">
+                {doc.id === "any" ? "Any" : doc.first_name}
+              </div>
+              <div className="text-[10px] text-slate-400 leading-tight truncate">
+                {doc.id === "any" ? "Available" : (doc.specialty?.split(" ")[0] ?? "")}
+              </div>
+            </div>
+          </button>
+        )
+      })}
     </div>
   )
 }
 
-function ServiceList({ selected, onSelect }: { selected: string; onSelect: (id: string) => void }) {
+function ServiceList({ services, selected, onSelect, loading = false }: {
+  services: ServiceSummary[]
+  selected: string
+  onSelect: (id: string) => void
+  loading?: boolean
+}) {
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-2.5">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="w-full flex items-center gap-3.5 p-4 rounded-lg border-2 border-slate-100 bg-white shadow-sm">
+            <div className="w-11 h-11 rounded-md bg-slate-100 animate-pulse shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-slate-100 rounded animate-pulse w-3/4" />
+              <div className="h-3 bg-slate-100 rounded animate-pulse w-1/2" />
+            </div>
+            <div className="text-right space-y-2">
+              <div className="h-4 bg-slate-100 rounded animate-pulse w-16 ml-auto" />
+              <div className="h-3 bg-slate-100 rounded animate-pulse w-12 ml-auto" />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (services.length === 0) {
+    return (
+      <div className="py-8 text-center text-sm text-slate-400">
+        No hay servicios disponibles en este momento.
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-2.5">
-      {SERVICES.map(svc => (
+      {services.map(svc => (
         <button
           key={svc.id}
           onClick={() => onSelect(svc.id)}
@@ -180,14 +276,14 @@ function ServiceList({ selected, onSelect }: { selected: string; onSelect: (id: 
           <div className={[
             "w-11 h-11 rounded-md flex items-center justify-center shrink-0",
             selected === svc.id ? "bg-[#008BB0] text-white" : "bg-slate-100 text-teal-700",
-          ].join(" ")}>{svc.icon}</div>
+          ].join(" ")}>{getServiceIcon(svc.name)}</div>
           <div className="flex-1 min-w-0">
-            <div className="font-bold text-slate-800 text-sm leading-tight">{svc.label}</div>
-            <div className="text-xs text-slate-500 mt-0.5 leading-relaxed">{svc.description}</div>
+            <div className="font-bold text-slate-800 text-sm leading-tight">{svc.name}</div>
+            <div className="text-xs text-slate-500 mt-0.5 leading-relaxed">{svc.description ?? ""}</div>
           </div>
           <div className="text-right shrink-0">
-            <div className="text-sm font-bold text-teal-700">{svc.price}</div>
-            <div className="text-[10px] text-slate-400">{svc.duration}</div>
+            <div className="text-sm font-bold text-teal-700">{formatPrice(svc.price)}</div>
+            <div className="text-[10px] text-slate-400">{formatDuration(svc.duration_minutes)}</div>
           </div>
         </button>
       ))}
@@ -195,24 +291,46 @@ function ServiceList({ selected, onSelect }: { selected: string; onSelect: (id: 
   )
 }
 
-function TimeSlotGrid({ selected, onSelect }: { selected: string; onSelect: (t: string) => void }) {
+function TimeSlotGrid({ slots, selected, onSelect, loading = false }: {
+  slots: TimeSlot[]
+  selected: string
+  onSelect: (time: string, doctorId?: string | null) => void
+  loading?: boolean
+}) {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-3 gap-2">
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => (
+          <div key={i} className="h-10 rounded-md bg-slate-100 animate-pulse" />
+        ))}
+      </div>
+    )
+  }
+
+  if (slots.length === 0) {
+    return (
+      <div className="py-8 text-center text-sm text-slate-400">
+        No hay horarios disponibles para esta fecha.
+      </div>
+    )
+  }
+
   return (
     <div className="grid grid-cols-3 gap-2">
-      {TIME_SLOTS.map(slot => {
-        const unavail = UNAVAILABLE.has(slot)
-        const isSel   = selected === slot
+      {slots.map(slot => {
+        const isSel = selected === slot.time
         return (
           <button
-            key={slot}
-            disabled={unavail}
-            onClick={() => onSelect(slot)}
+            key={slot.time}
+            disabled={!slot.available}
+            onClick={() => onSelect(slot.time, slot.doctor_id)}
             className={[
               "py-2.5 rounded-md text-xs font-semibold transition-all active:scale-95",
-              unavail ? "bg-slate-50 text-slate-300 cursor-not-allowed line-through"
+              !slot.available ? "bg-slate-50 text-slate-300 cursor-not-allowed line-through"
               : isSel  ? "bg-[#008BB0] text-white shadow-md"
                        : "bg-white border border-slate-200 text-slate-700 hover:border-teal-400 hover:text-teal-700",
             ].join(" ")}
-          >{slot}</button>
+          >{formatSlotTime(slot.time)}</button>
         )
       })}
     </div>
@@ -274,7 +392,7 @@ function DesktopStepNav({ step }: { step: number }) {
   )
 }
 
-function ClinicInfoCard() {
+function ClinicInfoCard({ doctors }: { doctors: DoctorSummary[] }) {
   return (
     <div className="rounded-lg bg-white border border-slate-100 shadow-md p-5">
       <div className="flex items-center gap-3 mb-4">
@@ -300,49 +418,49 @@ function ClinicInfoCard() {
           <span>Lun – Vie: 8 AM – 5 PM<br />Sáb: 8 AM – 12 PM</span>
         </div>
       </div>
-      <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2">
-        <div className="flex -space-x-2">
-          {DOCTORS.slice(1).map(d => (
-            <div key={d.id} className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold" style={{ backgroundColor: d.color, color:"#1e293b" }}>{d.initials}</div>
-          ))}
+      {doctors.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2">
+          <div className="flex -space-x-2">
+            {doctors.slice(0, 3).map((d, i) => (
+              <div key={d.id} className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold" style={{ backgroundColor: getDoctorColor(i), color:"#1e293b" }}>{getDoctorInitials(d)}</div>
+            ))}
+          </div>
+          <span className="text-[11px] text-slate-500">{doctors.length} especialista{doctors.length !== 1 ? "s" : ""} disponible{doctors.length !== 1 ? "s" : ""}</span>
         </div>
-        <span className="text-[11px] text-slate-500">3 especialistas disponibles</span>
-      </div>
+      )}
     </div>
   )
 }
 
-function BookingSummaryCard({ booking }: { booking: BookingData }) {
-  const svc = SERVICES.find(s => s.id === booking.serviceId)
-  const doc = DOCTORS.find(d => d.id === booking.doctorId)
-  const formatDate = (iso: string) => {
-    if (!iso) return null
-    const [y, m, d] = iso.split("-")
-    return new Date(+y, +m - 1, +d).toLocaleDateString("es-CR", { weekday: "short", month: "short", day: "numeric" })
-  }
-  if (!svc) return null
+function BookingSummaryCard({ booking, service, doctor }: {
+  booking: BookingFormData
+  service: ServiceSummary | undefined
+  doctor: DoctorSummary | undefined
+}) {
+  if (!service) return null
   return (
     <div className="rounded-lg bg-[#008BB0] text-white p-5 shadow-md">
       <div className="text-teal-200 text-[10px] font-bold uppercase tracking-widest mb-2">Tu selección</div>
-      <div className="font-bold text-base mb-1">{svc.label}</div>
-      <div className="text-teal-200 text-xs mb-3">{svc.duration} · {svc.price}</div>
-      {doc && <div className="text-sm font-medium mb-1">con {doc.name}</div>}
-      {booking.date && <div className="text-teal-200 text-xs">{formatDate(booking.date)}{booking.time ? ` a las ${booking.time}` : ""}</div>}
+      <div className="font-bold text-base mb-1">{service.name}</div>
+      <div className="text-teal-200 text-xs mb-3">{formatDuration(service.duration_minutes)} · {formatPrice(service.price)}</div>
+      {doctor && <div className="text-sm font-medium mb-1">con {getDoctorDisplayName(doctor)}</div>}
+      {booking.date && (
+        <div className="text-teal-200 text-xs">
+          {formatDateShort(booking.date)}{booking.time ? ` a las ${formatSlotTime(booking.time)}` : ""}
+        </div>
+      )}
     </div>
   )
 }
 
 // ─── Success Screen ────────────────────────────────────────────────────────────
 
-function SuccessScreen({ booking, onHome }: { booking: BookingData; onHome: () => void }) {
-  const svc = SERVICES.find(s => s.id === booking.serviceId)
-  const doc = DOCTORS.find(d => d.id === booking.doctorId)
-  const formatDate = (iso: string) => {
-    if (!iso) return "—"
-    const [y, m, d] = iso.split("-")
-    return new Date(+y, +m - 1, +d).toLocaleDateString("es-CR", { weekday: "long", month: "long", day: "numeric" })
-  }
-
+function SuccessScreen({ booking, confirmation, service, onHome }: {
+  booking: BookingFormData
+  confirmation: BookingConfirmation
+  service: ServiceSummary | undefined
+  onHome: () => void
+}) {
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-12 font-sans">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-100 p-10 flex flex-col items-center text-center">
@@ -368,14 +486,16 @@ function SuccessScreen({ booking, onHome }: { booking: BookingData; onHome: () =
         <div className="w-full rounded-lg bg-slate-50 border border-slate-100 overflow-hidden mb-8 text-left">
           <div className="bg-[#008BB0] px-5 py-4">
             <div className="text-teal-200 text-xs font-semibold uppercase tracking-wider mb-0.5">Servicio</div>
-            <div className="text-white font-bold text-base">{svc?.label}</div>
-            <div className="text-teal-200 text-xs mt-0.5">{svc?.duration} · {svc?.price}</div>
+            <div className="text-white font-bold text-base">{confirmation.service?.name ?? service?.name ?? "—"}</div>
+            {service && (
+              <div className="text-teal-200 text-xs mt-0.5">{formatDuration(service.duration_minutes)} · {formatPrice(service.price)}</div>
+            )}
           </div>
           <div className="divide-y divide-slate-100">
             {[
-              { label: "Fecha",    value: formatDate(booking.date) },
-              { label: "Hora",     value: booking.time },
-              { label: "Doctor",   value: doc?.name ?? "Disponible" },
+              { label: "Fecha",    value: formatDateLong(booking.date) },
+              { label: "Hora",     value: booking.time ? formatSlotTime(booking.time) : "—" },
+              { label: "Doctor",   value: `Dr. ${confirmation.doctor.first_name} ${confirmation.doctor.last_name}` },
               { label: "Paciente", value: `${booking.firstName} ${booking.lastName}` },
               { label: "WhatsApp", value: `+506 ${booking.whatsapp}` },
             ].map(({ label, value }) => (
@@ -404,42 +524,158 @@ function SuccessScreen({ booking, onHome }: { booking: BookingData; onHome: () =
   )
 }
 
+// ─── Error Banner ──────────────────────────────────────────────────────────────
+
+function ErrorBanner({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+  return (
+    <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
+      <AlertCircle size={16} className="shrink-0" />
+      <span className="flex-1">{message}</span>
+      <button onClick={onDismiss} className="ml-auto text-red-400 hover:text-red-600 shrink-0">
+        <X size={14} />
+      </button>
+    </div>
+  )
+}
+
 // ─── Main Wizard Component ─────────────────────────────────────────────────────
 
-export function PatientBookingWizard({ onHome }: { onHome: () => void }) {
+export function PatientBookingWizard({ clinicId, onHome }: { clinicId: string; onHome: () => void }) {
   const TOTAL = 4
   const [step, setStep]         = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [booking, setBooking]   = useState<BookingData>({ ...EMPTY_BOOKING })
+  const [booking, setBooking]   = useState<BookingFormData>({ ...EMPTY_BOOKING })
 
-  const update = (fields: Partial<BookingData>) => setBooking(b => ({ ...b, ...fields }))
-  const next   = () => setStep(s => Math.min(s + 1, TOTAL))
-  const back   = () => setStep(s => Math.max(s - 1, 1))
+  // ── API Data ────────────────────────────────────────────────────────────
+  const [services, setServices] = useState<ServiceSummary[]>([])
+  const [doctors, setDoctors]   = useState<DoctorSummary[]>([])
+  const [slots, setSlots]       = useState<TimeSlot[]>([])
+  const [confirmation, setConfirmation] = useState<BookingConfirmation | null>(null)
+  // When "any" is selected, stores the real doctor UUID from the chosen slot
+  const [resolvedDoctorId, setResolvedDoctorId] = useState<string | null>(null)
 
-  const selectedService = SERVICES.find(s => s.id === booking.serviceId)
-  const selectedDoctor  = DOCTORS.find(d => d.id === booking.doctorId)
+  // ── Loading & Error ─────────────────────────────────────────────────────
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [loadingSlots, setLoadingSlots]     = useState(false)
+  const [error, setError]                   = useState<string | null>(null)
 
-  const formatDate = (iso: string) => {
-    if (!iso) return "—"
-    const [y, m, d] = iso.split("-")
-    return new Date(+y, +m - 1, +d).toLocaleDateString("es-CR", { weekday: "short", month: "short", day: "numeric" })
-  }
+  const update = (fields: Partial<BookingFormData>) => setBooking(b => ({ ...b, ...fields }))
+  const next   = () => { setError(null); setStep(s => Math.min(s + 1, TOTAL)) }
+  const back   = () => { setError(null); setStep(s => Math.max(s - 1, 1)) }
+
+  const selectedService = services.find(s => s.id === booking.serviceId)
+  const selectedDoctor  = doctors.find(d => d.id === booking.doctorId)
+
+  // ── Fetch services on mount ─────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      try {
+        const svc = await getServices(clinicId)
+        if (!cancelled) {
+          setServices(svc)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Error al cargar los datos. Intenta de nuevo.")
+        }
+      } finally {
+        if (!cancelled) setInitialLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [clinicId])
+
+  // ── Re-fetch doctors when a service is selected ─────────────────────────
+  useEffect(() => {
+    let cancelled = false
+    async function loadDoctors() {
+      try {
+        const doc = await getDoctors(clinicId, booking.serviceId || undefined)
+        if (!cancelled) setDoctors(doc)
+      } catch {
+        // keep existing doctors on error
+      }
+    }
+    loadDoctors()
+    return () => { cancelled = true }
+  }, [clinicId, booking.serviceId])
+
+  // ── Fetch available slots when doctor + date change ─────────────────────
+  useEffect(() => {
+    setResolvedDoctorId(null)
+    if (!booking.date || !booking.doctorId) {
+      setSlots([])
+      return
+    }
+    let cancelled = false
+    async function fetchSlots() {
+      setLoadingSlots(true)
+      setError(null)
+      try {
+        const res = await getAvailableSlots(
+          clinicId,
+          booking.doctorId,
+          booking.date,
+          booking.serviceId || undefined,
+        )
+        if (!cancelled) setSlots(res.slots)
+      } catch (err) {
+        if (!cancelled) {
+          setSlots([])
+          setError(err instanceof Error ? err.message : "Error al cargar horarios disponibles.")
+        }
+      } finally {
+        if (!cancelled) setLoadingSlots(false)
+      }
+    }
+    fetchSlots()
+    return () => { cancelled = true }
+  }, [clinicId, booking.doctorId, booking.date, booking.serviceId])
 
   const canStep2 = !!(booking.date && booking.time)
   const canStep3 = !!(booking.firstName && booking.lastName && booking.cedula && booking.whatsapp)
 
-  const handleReservar = () => {
+  const handleReservar = useCallback(async () => {
     setIsSubmitting(true)
-    setTimeout(() => {
+    setError(null)
+    try {
+      // Use the real doctor UUID: resolvedDoctorId (from slot) takes priority over booking.doctorId
+      const finalDoctorId = booking.doctorId === "any"
+        ? resolvedDoctorId
+        : booking.doctorId
+
+      if (!finalDoctorId || finalDoctorId === "any") {
+        setError("Por favor selecciona un horario para asignar un doctor.")
+        setIsSubmitting(false)
+        return
+      }
+
+      const conf = await createBooking({
+        clinic_id: clinicId,
+        service_id: booking.serviceId,
+        doctor_id: finalDoctorId,
+        date: booking.date,
+        time: booking.time,
+        first_name: booking.firstName,
+        last_name: booking.lastName,
+        identification: booking.cedula,
+        whatsapp_phone: booking.whatsapp || undefined,
+      })
+      setConfirmation(conf)
+      setStep(99)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al crear la cita. Intenta de nuevo.")
+    } finally {
       setIsSubmitting(false)
-      setStep(99) // success state
-    }, 1500)
-  }
+    }
+  }, [clinicId, booking, resolvedDoctorId])
 
   // ── Success screen ────────────────────────────────────────────────────────
 
-  if (step === 99) {
-    return <SuccessScreen booking={booking} onHome={onHome} />
+  if (step === 99 && confirmation) {
+    return <SuccessScreen booking={booking} confirmation={confirmation} service={selectedService} onHome={onHome} />
   }
 
   // ── Inline step content ───────────────────────────────────────────────────
@@ -448,14 +684,14 @@ export function PatientBookingWizard({ onHome }: { onHome: () => void }) {
     <div>
       <h2 className="text-xl font-bold text-slate-900 mb-1 text-pretty">¿Con qué podemos ayudarte hoy?</h2>
       <p className="text-sm text-slate-500 mb-5">Selecciona un servicio para comenzar</p>
-      <ServiceList selected={booking.serviceId} onSelect={id => { update({ serviceId: id }); next() }} />
+      <ServiceList services={services} loading={initialLoading} selected={booking.serviceId} onSelect={id => { update({ serviceId: id }); next() }} />
     </div>
   )
 
   const doctorSectionContent = (
     <div>
       <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Elige un profesional</p>
-      <DoctorGrid selected={booking.doctorId} onSelect={id => update({ doctorId: id })} />
+      <DoctorGrid doctors={doctors} loading={initialLoading} selected={booking.doctorId} onSelect={id => update({ doctorId: id })} />
     </div>
   )
 
@@ -466,8 +702,8 @@ export function PatientBookingWizard({ onHome }: { onHome: () => void }) {
       <MiniCalendar selected={booking.date} onSelect={d => update({ date: d, time: "" })} />
       {booking.date && (
         <div className="mt-5">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Horarios disponibles — {formatDate(booking.date)}</p>
-          <TimeSlotGrid selected={booking.time} onSelect={t => update({ time: t })} />
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Horarios disponibles — {formatDateShort(booking.date)}</p>
+          <TimeSlotGrid slots={slots} loading={loadingSlots} selected={booking.time} onSelect={(t, docId) => { update({ time: t }); if (docId) setResolvedDoctorId(docId) }} />
         </div>
       )}
     </div>
@@ -540,14 +776,16 @@ export function PatientBookingWizard({ onHome }: { onHome: () => void }) {
       <div className="rounded-lg bg-white shadow-md overflow-hidden border border-slate-100">
         <div className="bg-[#008BB0] px-5 py-4">
           <div className="text-teal-200 text-xs font-semibold uppercase tracking-wider mb-0.5">Servicio</div>
-          <div className="text-white font-bold text-base">{selectedService?.label}</div>
-          <div className="text-teal-200 text-xs mt-0.5">{selectedService?.duration} · {selectedService?.price}</div>
+          <div className="text-white font-bold text-base">{selectedService?.name ?? "—"}</div>
+          {selectedService && (
+            <div className="text-teal-200 text-xs mt-0.5">{formatDuration(selectedService.duration_minutes)} · {formatPrice(selectedService.price)}</div>
+          )}
         </div>
         <div className="divide-y divide-slate-100">
           {[
-            { label: "Fecha",    value: formatDate(booking.date) },
-            { label: "Hora",     value: booking.time || "—" },
-            { label: "Doctor",   value: selectedDoctor?.name || "Disponible" },
+            { label: "Fecha",    value: formatDateShort(booking.date) ?? "—" },
+            { label: "Hora",     value: booking.time ? formatSlotTime(booking.time) : "—" },
+            { label: "Doctor",   value: selectedDoctor ? getDoctorDisplayName(selectedDoctor) : "Disponible" },
             { label: "Paciente", value: `${booking.firstName} ${booking.lastName}` },
             { label: "Cédula",   value: booking.cedula },
             { label: "WhatsApp", value: `+506 ${booking.whatsapp}` },
@@ -591,7 +829,7 @@ export function PatientBookingWizard({ onHome }: { onHome: () => void }) {
         {isSubmitting ? (
           <>
             <Loader2 size={18} className="animate-spin" />
-            Confirmando...
+            Procesando...
           </>
         ) : cfg.label}
       </button>
@@ -629,6 +867,7 @@ export function PatientBookingWizard({ onHome }: { onHome: () => void }) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 pb-36 pt-3">
+          {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
           {step === 1 && (
             <div className="flex flex-col gap-8">
               {serviceStepContent}
@@ -669,8 +908,8 @@ export function PatientBookingWizard({ onHome }: { onHome: () => void }) {
         <DesktopStepNav step={step} />
 
         <div className="mt-auto pt-8 flex flex-col gap-3">
-          {booking.serviceId && <BookingSummaryCard booking={booking} />}
-          <ClinicInfoCard />
+          {booking.serviceId && <BookingSummaryCard booking={booking} service={selectedService} doctor={selectedDoctor} />}
+          <ClinicInfoCard doctors={doctors} />
         </div>
       </aside>
 
@@ -693,6 +932,12 @@ export function PatientBookingWizard({ onHome }: { onHome: () => void }) {
           </div>
         </div>
 
+        {error && (
+          <div className="mb-6">
+            <ErrorBanner message={error} onDismiss={() => setError(null)} />
+          </div>
+        )}
+
         {step === 1 && (
           <div className="grid grid-cols-3 gap-5">
             <div className="col-span-2 bg-white rounded-lg shadow-md border border-slate-100 p-6">
@@ -701,9 +946,9 @@ export function PatientBookingWizard({ onHome }: { onHome: () => void }) {
             <div className="flex flex-col gap-5">
               <div className="bg-white rounded-lg shadow-md border border-slate-100 p-6">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Elige un profesional</p>
-                <DoctorGrid selected={booking.doctorId} onSelect={id => update({ doctorId: id })} compact />
+                <DoctorGrid doctors={doctors} loading={initialLoading} selected={booking.doctorId} onSelect={id => update({ doctorId: id })} compact />
               </div>
-              <ClinicInfoCard />
+              <ClinicInfoCard doctors={doctors} />
             </div>
           </div>
         )}
@@ -720,10 +965,10 @@ export function PatientBookingWizard({ onHome }: { onHome: () => void }) {
             <div className="col-span-2 bg-white rounded-lg shadow-md border border-slate-100 p-6 flex flex-col">
               <h2 className="text-lg font-bold text-slate-900 mb-1">Horarios Disponibles</h2>
               <p className="text-xs text-slate-500 mb-5">
-                {booking.date ? `Espacios para ${formatDate(booking.date)}` : "Selecciona una fecha primero"}
+                {booking.date ? `Espacios para ${formatDateShort(booking.date)}` : "Selecciona una fecha primero"}
               </p>
               {booking.date
-                ? <TimeSlotGrid selected={booking.time} onSelect={t => update({ time: t })} />
+                ? <TimeSlotGrid slots={slots} loading={loadingSlots} selected={booking.time} onSelect={(t, docId) => { update({ time: t }); if (docId) setResolvedDoctorId(docId) }} />
                 : <div className="flex-1 flex items-center justify-center text-slate-300 text-sm">← Elige una fecha</div>
               }
               <div className="mt-auto pt-6">{renderCTA()}</div>
@@ -738,8 +983,8 @@ export function PatientBookingWizard({ onHome }: { onHome: () => void }) {
               <div className="mt-6">{renderCTA()}</div>
             </div>
             <div className="flex flex-col gap-5">
-              {booking.serviceId && <BookingSummaryCard booking={booking} />}
-              <ClinicInfoCard />
+              {booking.serviceId && <BookingSummaryCard booking={booking} service={selectedService} doctor={selectedDoctor} />}
+              <ClinicInfoCard doctors={doctors} />
             </div>
           </div>
         )}
@@ -751,8 +996,8 @@ export function PatientBookingWizard({ onHome }: { onHome: () => void }) {
               <div className="mt-6">{renderCTA()}</div>
             </div>
             <div className="flex flex-col gap-5">
-              {booking.serviceId && <BookingSummaryCard booking={booking} />}
-              <ClinicInfoCard />
+              {booking.serviceId && <BookingSummaryCard booking={booking} service={selectedService} doctor={selectedDoctor} />}
+              <ClinicInfoCard doctors={doctors} />
             </div>
           </div>
         )}

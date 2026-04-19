@@ -73,8 +73,7 @@ export function TopHeader({
     .slice(0, 2)
     .toUpperCase()
 
-  const emailSlug = authUser.name.toLowerCase().replace(/\s/g, ".").replace("dr.", "")
-  const email = `${emailSlug}@dentcare.cr`
+  const email = authUser.email
 
   return (
     <header className="h-[64px] shrink-0 flex items-center justify-between px-4 lg:px-6 bg-white border-b border-border">

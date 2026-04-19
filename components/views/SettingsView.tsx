@@ -3,21 +3,22 @@
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserPlus, Trash2 } from "lucide-react"
+import { ServicesManagementView } from "./ServicesManagementView"
 
 const INITIAL_STAFF = [
-  { id: "u1", name: "Dr. Carlos Mendez", email: "carlos@dentcare.cr", role: "Doctor", status: "Active" },
-  { id: "u2", name: "Dr. Laura Martinez", email: "laura@dentcare.cr", role: "Doctor", status: "Active" },
-  { id: "u3", name: "Ana Rodríguez", email: "ana@dentcare.cr", role: "Receptionist", status: "Active" },
-  { id: "u4", name: "Admin User", email: "admin@dentcare.cr", role: "Admin", status: "Active" },
+  { id: "u1", name: "Dr. Carlos Mendez", email: "carlos@citabox.app", role: "Doctor", status: "Active" },
+  { id: "u2", name: "Dr. Laura Martinez", email: "laura@citabox.app", role: "Doctor", status: "Active" },
+  { id: "u3", name: "Ana Rodríguez", email: "ana@citabox.app", role: "Receptionist", status: "Active" },
+  { id: "u4", name: "Admin User", email: "admin@citabox.app", role: "Admin", status: "Active" },
 ]
 
 export function SettingsView() {
   const [clinic, setClinic] = useState({
-    name: "DentCare Pro Clinic",
+    name: "CitaBox Clinic",
     taxId: "3-101-000000",
     phone: "+506 2222-3333",
     address: "San José, Costa Rica",
-    email: "info@dentcare.cr",
+    email: "info@citabox.app",
   })
   const [staff, setStaff] = useState(INITIAL_STAFF)
   const [showInvite, setShowInvite] = useState(false)
@@ -59,6 +60,12 @@ export function SettingsView() {
                 className="rounded-t-xl rounded-b-none px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-foreground transition-all"
               >
                 Staff Management
+              </TabsTrigger>
+              <TabsTrigger
+                value="services"
+                className="rounded-t-xl rounded-b-none px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-foreground transition-all"
+              >
+                Services
               </TabsTrigger>
             </TabsList>
 
@@ -236,6 +243,11 @@ export function SettingsView() {
                   </tbody>
                 </table>
               </div>
+            </TabsContent>
+
+            {/* ── Services Management ── */}
+            <TabsContent value="services" className="p-4 sm:p-6 mt-0">
+              <ServicesManagementView />
             </TabsContent>
           </Tabs>
         </div>

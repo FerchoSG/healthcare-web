@@ -1,30 +1,49 @@
 "use client";
 
+import type { MeResponse, ClinicMembershipInfo } from "@/types/api";
+import { Role as ApiRole } from "@/types/api";
+
 export type Role = "admin" | "receptionist" | "doctor";
 
-export type AuthRole = "ADMIN" | "RECEPTIONIST" | "DOCTOR";
+export type AuthRole = "ADMIN" | "STAFF" | "DOCTOR";
+
 export interface AuthUser {
+  id: string;
   name: string;
+  email: string;
   role: AuthRole;
+  membership: ClinicMembershipInfo | null;
 }
 
-export const AUTH_ROLE_TO_ROLE: Record<AuthRole, Role> = {
+export const AUTH_ROLE_TO_ROLE: Record<string, Role> = {
   ADMIN: "admin",
-  RECEPTIONIST: "receptionist",
+  STAFF: "receptionist",
   DOCTOR: "doctor",
 };
 
 export const ROLE_TO_AUTH_ROLE: Record<Role, AuthRole> = {
   admin: "ADMIN",
-  receptionist: "RECEPTIONIST",
+  receptionist: "STAFF",
   doctor: "DOCTOR",
 };
 
 export const ROLE_NAMES: Record<Role, string> = {
-  admin: "Fercho",
-  receptionist: "Maria",
-  doctor: "Dr. Carlos",
+  admin: "Admin",
+  receptionist: "Receptionist",
+  doctor: "Doctor",
 };
+
+/** Build an AuthUser from the GET /auth/me response */
+export function meToAuthUser(me: MeResponse): AuthUser {
+  const membership = me.active_membership;
+  return {
+    id: me.id,
+    name: `${me.first_name} ${me.last_name}`,
+    email: me.email,
+    role: (membership?.role ?? ApiRole.ADMIN) as AuthRole,
+    membership,
+  };
+}
 
 export type View =
   | "dashboard"
@@ -377,7 +396,7 @@ export const PATIENT_PORTAL_DATA = {
     time: "09:00 AM",
     doctor: "Dr. Carlos Mendez",
     reason: "Routine Cleaning",
-    location: "DentCare Pro Clinic, San José",
+    location: "CitaBox Clinic, San José",
   },
   prescriptions: [
     {

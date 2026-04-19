@@ -96,7 +96,7 @@ function SidebarContent({
           <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--neon-green)" }}>
             <Activity size={16} className="text-white" strokeWidth={2.5} />
           </div>
-          {!collapsed && <span className="font-bold text-base text-foreground tracking-tight">DentCare</span>}
+          {!collapsed && <span className="font-bold text-base text-foreground tracking-tight">CitaBox</span>}
         </div>
 
         {/* Navigation */}
@@ -237,7 +237,7 @@ export function Sidebar({ role, authUser, activeView, onViewChange, collapsed, o
         <SheetContent side="left" className="w-[260px] p-0 rounded-r-lg" aria-describedby={undefined}>
           <SheetHeader className="sr-only">
             <SheetTitle>Navigation Menu</SheetTitle>
-            <SheetDescription>Main navigation for DentCare Pro</SheetDescription>
+            <SheetDescription>Main navigation for CitaBox</SheetDescription>
           </SheetHeader>
           <SidebarContent
             role={role}

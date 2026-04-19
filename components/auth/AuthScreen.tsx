@@ -1,29 +1,36 @@
 "use client"
 
 import { useState } from "react"
-import { Eye, EyeOff, Activity, CheckCircle2 } from "lucide-react"
-
-type AuthUser = { name: string; role: "ADMIN" | "RECEPTIONIST" | "DOCTOR" }
+import { Eye, EyeOff, Activity, CheckCircle2, Loader2 } from "lucide-react"
+import { api, setAccessToken, setClinicId } from "@/lib/api-client"
+import { meToAuthUser, type AuthUser } from "@/lib/store"
+import type { LoginResponse, MeResponse } from "@/types/api"
 
 interface AuthScreenProps {
   onLogin: (user: AuthUser) => void
 }
 
-const DEMO_USERS: { label: string; user: AuthUser; description: string }[] = [
+const DEMO_USERS = [
   {
     label: "Log in as Admin",
-    user: { name: "Fercho", role: "ADMIN" },
+    email: "admin@clinica.cr",
+    password: "admin123",
     description: "Full access — KPIs, Billing, Settings",
+    initial: "A",
   },
   {
     label: "Log in as Receptionist",
-    user: { name: "Maria", role: "RECEPTIONIST" },
+    email: "staff@clinica.cr",
+    password: "staff123",
     description: "Front Desk, Calendar, Patients",
+    initial: "R",
   },
   {
     label: "Log in as Doctor",
-    user: { name: "Dr. Carlos", role: "DOCTOR" },
+    email: "doctor@clinica.cr",
+    password: "doctor123",
     description: "Schedule, Patients, Medical Records",
+    initial: "D",
   },
 ]
 
@@ -38,6 +45,8 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
   const [screen, setScreen] = useState<"login" | "register">("login")
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Login form
   const [loginEmail, setLoginEmail] = useState("")
@@ -50,14 +59,43 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
   const [regPassword, setRegPassword] = useState("")
   const [regConfirm, setRegConfirm] = useState("")
 
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault()
-    onLogin({ name: adminName || "Admin", role: "ADMIN" })
+  const doLogin = async (email: string, password: string) => {
+    setError(null)
+    setLoading(true)
+    try {
+      const loginRes = await api.post<LoginResponse>("/auth/login", { email, password }, { skipAuth: true })
+      setAccessToken(loginRes.access_token)
+
+      // Pick the first clinic membership as active context
+      if (loginRes.memberships.length > 0) {
+        setClinicId(loginRes.memberships[0].clinic_id)
+      }
+
+      // Fetch the full user profile
+      const me = await api.get<MeResponse>("/auth/me")
+      const user = meToAuthUser(me)
+      onLogin(user)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Login failed"
+      setError(message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
-    onLogin({ name: "Fercho", role: "ADMIN" })
+    doLogin(loginEmail, loginPassword)
+  }
+
+  const handleDemoLogin = (email: string, password: string) => {
+    doLogin(email, password)
+  }
+
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault()
+    // Registration flow placeholder — would POST to /auth/register
+    doLogin(regEmail, regPassword)
   }
 
   return (
@@ -85,7 +123,7 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           >
             <Activity size={20} className="text-white" strokeWidth={2.5} />
           </div>
-          <span className="font-bold text-xl text-white tracking-tight">DentCare Pro</span>
+          <span className="font-bold text-xl text-white tracking-tight">CitaBox</span>
         </div>
 
         {/* Middle: headline */}
@@ -123,7 +161,7 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
         {/* Bottom: Testimonial */}
         <div className="relative z-10 p-5 rounded-md border border-white/10 bg-white/5">
           <p className="text-sm text-white/80 italic leading-relaxed">
-            "DentCare Pro transformed how we manage our clinic. Patient flow is seamless and billing has never been easier."
+            "CitaBox transformed how we manage our clinic. Patient flow is seamless and billing has never been easier."
           </p>
           <div className="flex items-center gap-3 mt-4">
             <div
@@ -150,7 +188,7 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
           >
             <Activity size={16} className="text-white" strokeWidth={2.5} />
           </div>
-          <span className="font-bold text-base text-foreground">DentCare Pro</span>
+          <span className="font-bold text-base text-foreground">CitaBox</span>
         </div>
 
         <div className="w-full max-w-[400px]">
@@ -161,6 +199,13 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
                 <h1 className="text-2xl font-extrabold text-foreground">Welcome back</h1>
                 <p className="text-sm text-muted-foreground mt-1">Sign in to your clinic account</p>
               </div>
+
+              {/* Error banner */}
+              {error && (
+                <div className="mb-4 px-4 py-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
+                  {error}
+                </div>
+              )}
 
               {/* Login form */}
               <form onSubmit={handleLogin} className="space-y-4">
@@ -195,8 +240,10 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
                 </div>
                 <button
                   type="submit"
-                  className="w-full py-3 rounded-md bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-all shadow-sm"
+                  disabled={loading}
+                  className="w-full py-3 rounded-md bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-all shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
                 >
+                  {loading && <Loader2 size={14} className="animate-spin" />}
                   Sign In
                 </button>
               </form>
@@ -210,11 +257,12 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
 
               {/* Demo Access */}
               <div className="space-y-2.5">
-                {DEMO_USERS.map(({ label, user, description }) => (
+                {DEMO_USERS.map(({ label, email, password, description, initial }) => (
                   <button
-                    key={user.role}
-                    onClick={() => onLogin(user)}
-                    className="w-full flex items-center justify-between px-5 py-3.5 rounded-md border border-border bg-white shadow-sm hover:border-[var(--neon-green)] hover:bg-[var(--neon-green-bg)] group transition-all"
+                    key={email}
+                    disabled={loading}
+                    onClick={() => handleDemoLogin(email, password)}
+                    className="w-full flex items-center justify-between px-5 py-3.5 rounded-md border border-border bg-white shadow-sm hover:border-[var(--neon-green)] hover:bg-[var(--neon-green-bg)] group transition-all disabled:opacity-60"
                   >
                     <div className="text-left">
                       <p className="text-sm font-semibold text-foreground group-hover:text-[var(--neon-green-text)] transition-colors">
@@ -226,7 +274,7 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
                       className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
                       style={{ backgroundColor: "var(--neon-green)" }}
                     >
-                      {user.name[0]}
+                      {initial}
                     </div>
                   </button>
                 ))}

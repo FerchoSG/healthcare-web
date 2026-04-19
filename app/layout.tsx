@@ -14,9 +14,15 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'DentCare Pro — Healthcare SaaS',
-  description: 'Premium B2B Healthcare SaaS platform for modern dental clinics',
-  generator: 'v0.app',
+  title: 'CitaBox — Healthcare SaaS Platform',
+  description: 'CitaBox – The all-in-one clinic management platform. Book appointments, manage records, and streamline billing at citabox.app.',
+  generator: 'citabox.app',
+  openGraph: {
+    title: 'CitaBox — Healthcare SaaS Platform',
+    description: 'CitaBox – The all-in-one clinic management platform.',
+    siteName: 'CitaBox',
+    url: 'https://citabox.app',
+  },
 }
 
 export default function RootLayout({

@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { type Role, type View, type AuthUser, AUTH_ROLE_TO_ROLE, ROLE_TO_AUTH_ROLE, ROLE_NAMES } from "@/lib/store"
+import { type Role, type View, type AuthUser, AUTH_ROLE_TO_ROLE, meToAuthUser } from "@/lib/store"
+import { getAccessToken, clearAuth } from "@/lib/api-client"
+import { fetchMe } from "@/services/appointments.service"
 import { AuthScreen } from "@/components/auth/AuthScreen"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { TopHeader } from "@/components/layout/TopHeader"
@@ -23,6 +25,7 @@ const defaultViewPerRole: Record<Role, View> = {
 
 export default function App() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
   const [activeView, setActiveView] = useState<View>("dashboard")
   const [isDark, setIsDark] = useState(false)
   const [emrPatientId, setEmrPatientId] = useState<string | null>(null)
@@ -39,22 +42,36 @@ export default function App() {
     document.documentElement.classList.toggle("dark", isDark)
   }, [isDark])
 
+  // On mount: if we have a stored token, try to restore the session
+  useEffect(() => {
+    const token = getAccessToken()
+    if (!token) {
+      setAuthLoading(false)
+      return
+    }
+    fetchMe()
+      .then((me) => {
+        const user = meToAuthUser(me)
+        setAuthUser(user)
+        setActiveView(defaultViewPerRole[AUTH_ROLE_TO_ROLE[user.role] ?? "admin"])
+      })
+      .catch(() => {
+        clearAuth()
+      })
+      .finally(() => setAuthLoading(false))
+  }, [])
+
   const handleLogin = (user: AuthUser) => {
     setAuthUser(user)
-    setActiveView(defaultViewPerRole[AUTH_ROLE_TO_ROLE[user.role]])
+    const role = AUTH_ROLE_TO_ROLE[user.role] ?? "admin"
+    setActiveView(defaultViewPerRole[role])
     setEmrPatientId(null)
   }
 
   const handleLogout = () => {
+    clearAuth()
     setAuthUser(null)
     setActiveView("dashboard")
-    setEmrPatientId(null)
-  }
-
-  const handleRoleSwitch = (role: Role) => {
-    const newAuthRole = ROLE_TO_AUTH_ROLE[role]
-    setAuthUser({ name: ROLE_NAMES[role], role: newAuthRole })
-    setActiveView(defaultViewPerRole[role])
     setEmrPatientId(null)
   }
 
@@ -63,12 +80,21 @@ export default function App() {
     setShowNewAppointment(true)
   }
 
+  // Show a loading spinner while we check if the token is still valid
+  if (authLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center font-sans" style={{ backgroundColor: "var(--app-bg)" }}>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-foreground border-t-transparent" />
+      </div>
+    )
+  }
+
   // If not authenticated, show only the auth screen
   if (!authUser) {
     return <AuthScreen onLogin={handleLogin} />
   }
 
-  const role = AUTH_ROLE_TO_ROLE[authUser.role]
+  const role = AUTH_ROLE_TO_ROLE[authUser.role] ?? "admin"
 
   const renderView = () => {
     switch (activeView) {
@@ -83,7 +109,13 @@ export default function App() {
           />
         )
       case "schedule":
-        return <DoctorDashboard onOpenEMR={(id) => setEmrPatientId(id)} />
+        return (
+          <DoctorDashboard
+            onOpenEMR={(id) => setEmrPatientId(id)}
+            doctorId={authUser.id}
+            doctorName={authUser.name}
+          />
+        )
       case "calendar":
         return <CalendarView onNewAppointment={openNewAppointment} />
       case "billing":
@@ -124,7 +156,7 @@ export default function App() {
           onNewInvoice={() => setShowNewInvoice(true)}
           onViewChange={setActiveView}
           onMenuClick={() => setMobileNavOpen(true)}
-          onRoleSwitch={handleRoleSwitch}
+          onRoleSwitch={() => {}}
         />
         <main className="flex-1 overflow-hidden">
           {renderView()}

@@ -63,7 +63,7 @@ function PatientLogin({
             <Activity size={28} className="text-white" strokeWidth={2.5} />
           </div>
           <h1 className="text-xl font-extrabold text-foreground">Patient Portal</h1>
-          <p className="text-xs text-muted-foreground mt-1">DentCare Pro — Secure Access</p>
+          <p className="text-xs text-muted-foreground mt-1">CitaBox — Secure Access</p>
         </div>
 
         {/* Login Card */}
@@ -141,7 +141,7 @@ function PatientHome({ onLogout }: { onLogout: () => void }) {
             >
               <Activity size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="font-bold text-sm text-foreground">DentCare Pro</span>
+            <span className="font-bold text-sm text-foreground">CitaBox</span>
           </div>
           <button
             onClick={onLogout}
