@@ -2,7 +2,6 @@
 
 import {
   Smile,
-  ArrowRight,
   Play,
   MapPin,
   Phone,

@@ -8,7 +8,6 @@ import {
   Clock,
   MapPin,
   User,
-  FileText,
   Download,
   LogOut,
   ChevronRight,

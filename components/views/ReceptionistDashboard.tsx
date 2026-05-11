@@ -115,7 +115,6 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
     }
   }
 
-  const pending = appointments.filter((a) => a.status !== AppointmentStatus.COMPLETED && a.status !== AppointmentStatus.CANCELLED)
   const completed = appointments.filter((a) => a.status === AppointmentStatus.COMPLETED)
 
   return (

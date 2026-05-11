@@ -1,9 +1,11 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  color-scheme: light;
+
   /* App shell */
   --app-bg: #F8FAFC;
   --neon-green: #008BB0;
@@ -47,6 +49,8 @@
 }
 
 .dark {
+  color-scheme: dark;
+
   --app-bg: #1A1C1E;
   --neon-green: #00AACC;
   --neon-green-bg: #0A2533;
@@ -142,6 +146,251 @@
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+}
+
+/*
+  Legacy dark-mode bridge.
+  Several screens predate the semantic token pass and still use hard-coded
+  light Tailwind colors. Keep those utilities theme-aware while the UI is
+  migrated component by component.
+*/
+.dark {
+  .bg-white,
+  .bg-slate-50,
+  .bg-slate-50\/60,
+  .bg-slate-50\/95 {
+    background-color: var(--card);
+  }
+
+  .bg-slate-100,
+  .bg-slate-200,
+  .hover\:bg-slate-100:hover,
+  .hover\:bg-slate-200:hover,
+  .hover\:bg-slate-50:hover,
+  .hover\:bg-slate-50\/50:hover {
+    background-color: var(--muted);
+  }
+
+  .bg-red-50 {
+    background-color: color-mix(in srgb, var(--destructive) 18%, transparent);
+  }
+
+  .hover\:bg-red-50:hover,
+  .hover\:bg-red-100:hover {
+    background-color: color-mix(in srgb, var(--destructive) 26%, transparent);
+  }
+
+  .bg-amber-50 {
+    background-color: color-mix(in srgb, #f59e0b 18%, transparent);
+  }
+
+  .hover\:bg-amber-100:hover {
+    background-color: color-mix(in srgb, #f59e0b 26%, transparent);
+  }
+
+  .bg-cyan-50,
+  .hover\:bg-cyan-50:hover,
+  .hover\:bg-teal-50:hover,
+  .hover\:bg-teal-50\/40:hover {
+    background-color: var(--accent);
+  }
+
+  .border-slate-100,
+  .border-slate-200,
+  .border-slate-300,
+  .border-gray-100,
+  .border-gray-200,
+  .divide-slate-100 > :not(:last-child) {
+    border-color: var(--border);
+  }
+
+  .text-slate-900,
+  .text-slate-800,
+  .text-slate-700,
+  .text-slate-600,
+  .hover\:text-slate-900:hover,
+  .hover\:text-slate-800:hover,
+  .hover\:text-slate-700:hover {
+    color: var(--foreground);
+  }
+
+  .text-slate-500,
+  .text-slate-400,
+  .text-slate-300,
+  .text-gray-500,
+  .text-gray-400,
+  .placeholder\:text-slate-300::placeholder {
+    color: var(--muted-foreground);
+  }
+
+  .text-slate-200 {
+    color: color-mix(in srgb, var(--muted-foreground) 42%, transparent);
+  }
+
+  .text-red-600,
+  .text-red-700 {
+    color: var(--destructive-foreground);
+  }
+
+  .text-amber-700 {
+    color: #fbbf24;
+  }
+
+  .text-cyan-800,
+  .text-teal-700 {
+    color: var(--accent-foreground);
+  }
+
+  .from-slate-50,
+  .via-slate-50\/95 {
+    --tw-gradient-from: var(--card);
+    --tw-gradient-via: color-mix(in srgb, var(--card) 95%, transparent);
+  }
+}
+
+[data-light-only='true'] {
+  color-scheme: light;
+  --app-bg: #F8FAFC;
+  --neon-green: #008BB0;
+  --neon-green-bg: #E0F4F9;
+  --neon-green-text: #006d8e;
+  --background: #F8FAFC;
+  --foreground: #0f172a;
+  --card: #FFFFFF;
+  --card-foreground: #0f172a;
+  --popover: #FFFFFF;
+  --popover-foreground: #0f172a;
+  --primary: #008BB0;
+  --primary-foreground: #FFFFFF;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #E0F4F9;
+  --accent-foreground: #006d8e;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #e2e8f0;
+  --input: #f1f5f9;
+  --ring: #008BB0;
+  --chart-1: #008BB0;
+  --chart-2: #E5E7EB;
+  --chart-3: #6B7280;
+  --chart-4: #F59E0B;
+  --chart-5: #EF4444;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #008BB0;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #008BB0;
+}
+
+.dark [data-light-only='true'] {
+  .bg-white {
+    background-color: #ffffff;
+  }
+
+  .bg-white\/90 {
+    background-color: rgb(255 255 255 / 0.9);
+  }
+
+  .bg-slate-50,
+  .bg-slate-50\/60,
+  .bg-slate-50\/95,
+  .hover\:bg-slate-50:hover,
+  .hover\:bg-slate-50\/50:hover {
+    background-color: #f8fafc;
+  }
+
+  .bg-slate-100,
+  .hover\:bg-slate-100:hover {
+    background-color: #f1f5f9;
+  }
+
+  .bg-slate-200,
+  .hover\:bg-slate-200:hover {
+    background-color: #e2e8f0;
+  }
+
+  .border-slate-100,
+  .divide-slate-100 > :not(:last-child) {
+    border-color: #f1f5f9;
+  }
+
+  .border-slate-200 {
+    border-color: #e2e8f0;
+  }
+
+  .border-slate-300 {
+    border-color: #cbd5e1;
+  }
+
+  .text-slate-900,
+  .hover\:text-slate-900:hover {
+    color: #0f172a;
+  }
+
+  .text-slate-800,
+  .hover\:text-slate-800:hover {
+    color: #1e293b;
+  }
+
+  .text-slate-700,
+  .hover\:text-slate-700:hover {
+    color: #334155;
+  }
+
+  .text-slate-600 {
+    color: #475569;
+  }
+
+  .text-slate-500 {
+    color: #64748b;
+  }
+
+  .text-slate-400,
+  .placeholder\:text-slate-300::placeholder {
+    color: #94a3b8;
+  }
+
+  .text-slate-300 {
+    color: #cbd5e1;
+  }
+
+  .text-slate-200 {
+    color: #e2e8f0;
+  }
+
+  .text-red-600 {
+    color: #dc2626;
+  }
+
+  .text-red-700 {
+    color: #b91c1c;
+  }
+
+  .text-amber-700 {
+    color: #b45309;
+  }
+
+  .text-cyan-800 {
+    color: #155e75;
+  }
+
+  .text-teal-700 {
+    color: #0f766e;
+  }
+
+  .from-slate-50 {
+    --tw-gradient-from: #f8fafc;
+  }
+
+  .via-slate-50\/95 {
+    --tw-gradient-via: rgb(248 250 252 / 0.95);
+  }
 }
 
 /* Hide scrollbar but keep scroll functionality */

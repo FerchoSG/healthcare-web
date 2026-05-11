@@ -24,7 +24,6 @@ interface SidebarProps {
   authUser: AuthUser
   activeView: View
   onViewChange: (view: View) => void
-  isDark: boolean
   collapsed: boolean
   onToggleCollapse: () => void
   mobileOpen?: boolean
@@ -218,7 +217,7 @@ export function Sidebar({ role, authUser, activeView, onViewChange, collapsed, o
       {/* Desktop sidebar — only visible on lg+ */}
       <aside
         className={cn(
-          "hidden lg:flex shrink-0 flex-col h-full bg-white border-r border-border transition-all duration-300",
+          "hidden lg:flex shrink-0 flex-col h-full bg-sidebar border-r border-sidebar-border transition-all duration-300",
           collapsed ? "w-[68px]" : "w-[220px]"
         )}
       >

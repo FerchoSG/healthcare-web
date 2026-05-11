@@ -27,7 +27,6 @@ export default function App() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [activeView, setActiveView] = useState<View>("dashboard")
-  const [isDark, setIsDark] = useState(false)
   const [emrPatientId, setEmrPatientId] = useState<string | null>(null)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -37,10 +36,6 @@ export default function App() {
   const [newAppointmentSlot, setNewAppointmentSlot] = useState<{ date?: string; time?: string } | undefined>()
   const [showWalkIn, setShowWalkIn] = useState(false)
   const [showNewInvoice, setShowNewInvoice] = useState(false)
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDark)
-  }, [isDark])
 
   // On mount: if we have a stored token, try to restore the session
   useEffect(() => {
@@ -137,7 +132,6 @@ export default function App() {
         authUser={authUser}
         activeView={activeView}
         onViewChange={setActiveView}
-        isDark={isDark}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
         mobileOpen={mobileNavOpen}
@@ -148,8 +142,6 @@ export default function App() {
         <TopHeader
           role={role}
           authUser={authUser}
-          isDark={isDark}
-          onToggleDark={() => setIsDark((d) => !d)}
           onLogout={handleLogout}
           onNewAppointment={() => openNewAppointment()}
           onNewPatient={() => setShowWalkIn(true)}

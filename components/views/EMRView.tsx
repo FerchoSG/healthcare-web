@@ -1,8 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { PATIENTS, type ToothCondition, type Medication } from "@/lib/store"
 import { X, Upload, FileText, Activity, Plus, Pill, Trash2 } from "lucide-react"
+import type { MedicalRecord, Patient } from "@/types/api"
+import { fetchMe } from "@/services/appointments.service"
+import { createMedicalRecord, fetchMedicalRecords } from "@/services/medical-records.service"
+import { fetchPatient } from "@/services/patients.service"
 
 interface EMRViewProps {
   patientId: string
@@ -91,7 +95,14 @@ function ToothSVG({
 }
 
 export function EMRView({ patientId, onClose }: EMRViewProps) {
-  const patient = PATIENTS.find((p) => p.id === patientId) || PATIENTS[0]
+  const fallbackPatient = PATIENTS.find((p) => p.id === patientId) || PATIENTS[0]
+  const [apiPatient, setApiPatient] = useState<Patient | null>(null)
+  const [records, setRecords] = useState<MedicalRecord[]>([])
+  const [doctorId, setDoctorId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<"notes" | "odontogram" | "gynae" | "prescriptions">("notes")
   const [isConsultationActive, setIsConsultationActive] = useState(false)
   const [diagnosis, setDiagnosis] = useState("")
@@ -103,6 +114,85 @@ export function EMRView({ patientId, onClose }: EMRViewProps) {
   const [uploads, setUploads] = useState<string[]>([])
   const [medications, setMedications] = useState<Medication[]>([])
   const [newMed, setNewMed] = useState<Omit<Medication, "id">>({ name: "", dosage: "", frequency: "" })
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      try {
+        setLoading(true)
+        setError(null)
+        const [patientRes, recordsRes, me] = await Promise.all([
+          fetchPatient(patientId),
+          fetchMedicalRecords(patientId),
+          fetchMe(),
+        ])
+        if (cancelled) return
+        setApiPatient(patientRes)
+        setRecords(recordsRes)
+        setDoctorId(me.id)
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load medical record")
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [patientId])
+
+  const patient = useMemo(() => {
+    if (!apiPatient) return fallbackPatient
+    const birth = new Date(apiPatient.birth_date)
+    const today = new Date()
+    let age = today.getFullYear() - birth.getFullYear()
+    const monthDiff = today.getMonth() - birth.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--
+    const name = `${apiPatient.first_name} ${apiPatient.last_name}`
+    const initials = `${apiPatient.first_name[0] ?? ""}${apiPatient.last_name[0] ?? ""}`.toUpperCase()
+    return {
+      ...fallbackPatient,
+      id: apiPatient.id,
+      name,
+      age: Number.isFinite(age) ? age : fallbackPatient.age,
+      phone: apiPatient.whatsapp_phone ?? fallbackPatient.phone,
+      avatarInitials: initials,
+      reason: records[0]?.diagnosis ?? fallbackPatient.reason,
+    }
+  }, [apiPatient, fallbackPatient, records])
+
+  const saveClinicalNotes = async () => {
+    if (!doctorId) {
+      setError("Current user profile is required before saving")
+      return
+    }
+    if (!diagnosis && !treatment) {
+      setError("Add a diagnosis or treatment plan before saving")
+      return
+    }
+
+    try {
+      setSaving(true)
+      setError(null)
+      setSaveMessage(null)
+      const created = await createMedicalRecord({
+        patient_id: patientId,
+        doctor_id: doctorId,
+        diagnosis: diagnosis || undefined,
+        treatment_plan: treatment || undefined,
+      })
+      setRecords((prev) => [created, ...prev])
+      setSaveMessage("Clinical notes saved")
+      setIsConsultationActive(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save clinical notes")
+    } finally {
+      setSaving(false)
+    }
+  }
   const setCondition = (tooth: number, condition: ToothCondition) => {
     setToothConditions((prev) => ({ ...prev, [tooth]: condition }))
     setSelectedTooth(null)
@@ -214,6 +304,15 @@ export function EMRView({ patientId, onClose }: EMRViewProps) {
 
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          {loading && (
+            <p className="text-sm text-muted-foreground mb-4">Loading medical record...</p>
+          )}
+          {error && (
+            <p className="text-sm text-red-600 mb-4">{error}</p>
+          )}
+          {saveMessage && (
+            <p className="text-sm text-emerald-700 mb-4">{saveMessage}</p>
+          )}
           {/* Clinical Notes */}
           {activeTab === "notes" && (
             <div className="flex flex-col gap-4">
@@ -269,11 +368,29 @@ export function EMRView({ patientId, onClose }: EMRViewProps) {
                 </div>
               </div>
               <button
-                disabled={!isConsultationActive}
+                onClick={saveClinicalNotes}
+                disabled={!isConsultationActive || saving}
                 className="w-full py-3 rounded-md bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-all mt-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Save Clinical Notes
+                {saving ? "Saving..." : "Save Clinical Notes"}
               </button>
+              {records.length > 0 && (
+                <div className="bg-white rounded-lg shadow-md p-4 border border-border">
+                  <h4 className="text-xs font-bold text-foreground mb-3">Recent Records</h4>
+                  <div className="flex flex-col gap-3">
+                    {records.slice(0, 5).map((record) => (
+                      <div key={record.id} className="border-b border-border last:border-0 pb-3 last:pb-0">
+                        <p className="text-xs font-semibold text-foreground">
+                          {new Date(record.createdAt).toLocaleDateString()}
+                        </p>
+                        {record.diagnosis && (
+                          <p className="text-xs text-muted-foreground mt-1">{record.diagnosis}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

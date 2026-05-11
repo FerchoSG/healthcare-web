@@ -11,9 +11,13 @@ type AppView = "welcome" | "wizard"
 export default function BookPage() {
   const [view, setView] = useState<AppView>("welcome")
 
-  if (view === "welcome") {
-    return <WelcomeLandingPage onBook={() => setView("wizard")} />
-  }
-
-  return <PatientBookingWizard clinicId={CLINIC_ID} onHome={() => setView("welcome")} />
+  return (
+    <div data-light-only="true">
+      {view === "welcome" ? (
+        <WelcomeLandingPage onBook={() => setView("wizard")} />
+      ) : (
+        <PatientBookingWizard clinicId={CLINIC_ID} onHome={() => setView("welcome")} />
+      )}
+    </div>
+  )
 }

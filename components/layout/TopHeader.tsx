@@ -1,6 +1,8 @@
 "use client"
 
-import { type Role, type AuthUser, type View, ROLE_NAMES, ROLE_TO_AUTH_ROLE } from "@/lib/store"
+import { useEffect, useState } from "react"
+import { type Role, type AuthUser, type View } from "@/lib/store"
+import { useTheme } from "next-themes"
 import { Search, Bell, Plus, Sun, Moon, User, Settings, LogOut, Calendar, UserPlus, FileText, Menu, Shield, Stethoscope, ClipboardList } from "lucide-react"
 import {
   DropdownMenu,
@@ -18,8 +20,6 @@ import {
 interface TopHeaderProps {
   role: Role
   authUser: AuthUser
-  isDark: boolean
-  onToggleDark: () => void
   onLogout: () => void
   onNewAppointment: () => void
   onNewPatient: () => void
@@ -56,8 +56,6 @@ const roleLabels: Record<Role, string> = {
 export function TopHeader({
   role,
   authUser,
-  isDark,
-  onToggleDark,
   onLogout,
   onNewAppointment,
   onNewPatient,
@@ -66,6 +64,14 @@ export function TopHeader({
   onMenuClick,
   onRoleSwitch,
 }: TopHeaderProps) {
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  const isDark = resolvedTheme === "dark"
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const initials = authUser.name
     .split(" ")
     .map((n) => n[0])
@@ -76,7 +82,7 @@ export function TopHeader({
   const email = authUser.email
 
   return (
-    <header className="h-[64px] shrink-0 flex items-center justify-between px-4 lg:px-6 bg-white border-b border-border">
+    <header className="h-[64px] shrink-0 flex items-center justify-between px-4 lg:px-6 bg-background border-b border-border">
       {/* Left: hamburger (mobile) + title */}
       <div className="flex items-center gap-3">
         {/* Hamburger — only on mobile */}
@@ -138,10 +144,11 @@ export function TopHeader({
 
         {/* Dark mode toggle */}
         <button
-          onClick={onToggleDark}
+          onClick={() => setTheme(isDark ? "light" : "dark")}
+          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
           className="w-9 h-9 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-all shadow-sm"
         >
-          {isDark ? <Sun size={15} /> : <Moon size={15} />}
+          {mounted && isDark ? <Sun size={15} /> : <Moon size={15} />}
         </button>
 
         {/* Create New dropdown */}
