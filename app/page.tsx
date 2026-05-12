@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { type Role, type View, type AuthUser, AUTH_ROLE_TO_ROLE, meToAuthUser } from "@/lib/store"
-import { getAccessToken, clearAuth } from "@/lib/api-client"
+import { getAccessToken, getClinicId, setClinicId, clearAuth } from "@/lib/api-client"
 import { fetchMe } from "@/services/appointments.service"
 import { AuthScreen } from "@/components/auth/AuthScreen"
 import { Sidebar } from "@/components/layout/Sidebar"
@@ -46,7 +46,17 @@ export default function App() {
     }
     fetchMe()
       .then((me) => {
-        const user = meToAuthUser(me)
+        let activeMe = me
+        if (!activeMe.active_membership && activeMe.memberships.length > 0) {
+          const storedClinic = getClinicId() ?? activeMe.memberships[0].clinic_id
+          setClinicId(storedClinic)
+          return fetchMe().then((nextMe) => {
+            const user = meToAuthUser(nextMe)
+            setAuthUser(user)
+            setActiveView(defaultViewPerRole[AUTH_ROLE_TO_ROLE[user.role] ?? "admin"])
+          })
+        }
+        const user = meToAuthUser(activeMe)
         setAuthUser(user)
         setActiveView(defaultViewPerRole[AUTH_ROLE_TO_ROLE[user.role] ?? "admin"])
       })
@@ -67,6 +77,16 @@ export default function App() {
     clearAuth()
     setAuthUser(null)
     setActiveView("dashboard")
+    setEmrPatientId(null)
+  }
+
+  const handleClinicSwitch = async (clinicId: string) => {
+    setClinicId(clinicId)
+    const me = await fetchMe()
+    const user = meToAuthUser(me)
+    setAuthUser(user)
+    const role = AUTH_ROLE_TO_ROLE[user.role] ?? "admin"
+    setActiveView(defaultViewPerRole[role])
     setEmrPatientId(null)
   }
 
@@ -148,7 +168,7 @@ export default function App() {
           onNewInvoice={() => setShowNewInvoice(true)}
           onViewChange={setActiveView}
           onMenuClick={() => setMobileNavOpen(true)}
-          onRoleSwitch={() => {}}
+          onClinicSwitch={handleClinicSwitch}
         />
         <main className="flex-1 overflow-hidden">
           {renderView()}

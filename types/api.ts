@@ -58,6 +58,7 @@ export interface ApiError {
 export interface ClinicMembershipInfo {
   clinic_id: string;
   clinic_name: string;
+  clinic_slug: string;
   role: Role;
   specialty: string | null;
 }
@@ -82,13 +83,35 @@ export interface Clinic {
   id: string;
   name: string;
   tax_id: string;
+  slug: string;
   phone: string | null;
   email: string | null;
+  address: string | null;
+  timezone: string;
+  public_phone: string | null;
+  public_email: string | null;
   logo_path: string | null;
+  theme_color: string | null;
+  booking_enabled: boolean;
   hacienda_api_key: string | null;
   is_active: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PublicClinic {
+  id: string;
+  name: string;
+  slug: string;
+  phone: string | null;
+  email: string | null;
+  public_phone: string | null;
+  public_email: string | null;
+  address: string | null;
+  timezone: string;
+  logo_path: string | null;
+  theme_color: string | null;
+  booking_enabled: boolean;
 }
 
 // ─── Service (Clinic Service Catalog) ─────────────────────────────────────────
@@ -286,7 +309,8 @@ export interface AvailableSlotsResponse {
 }
 
 export interface CreateBookingPayload {
-  clinic_id: string;
+  clinic_id?: string;
+  clinic_slug?: string;
   service_id: string;
   doctor_id: string;
   date: string;

@@ -5,9 +5,17 @@ import type {
   AvailableSlotsResponse,
   CreateBookingPayload,
   BookingConfirmation,
+  PublicClinic,
 } from "@/types/api";
 
 const SKIP_AUTH = { skipAuth: true } as const;
+
+export function getPublicClinic(slug: string): Promise<PublicClinic> {
+  return api.get<PublicClinic>(
+    `/public/clinics/${encodeURIComponent(slug)}`,
+    SKIP_AUTH,
+  );
+}
 
 /**
  * Fetch the list of active services for a clinic.

@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserPlus, Trash2 } from "lucide-react"
 import { ServicesManagementView } from "./ServicesManagementView"
+import { fetchCurrentClinic, updateCurrentClinic } from "@/services/clinics.service"
 
 const INITIAL_STAFF = [
   { id: "u1", name: "Dr. Carlos Mendez", email: "carlos@citabox.app", role: "Doctor", status: "Active" },
@@ -17,15 +18,44 @@ export function SettingsView() {
     name: "CitaBox Clinic",
     taxId: "3-101-000000",
     phone: "+506 2222-3333",
-    address: "San José, Costa Rica",
+    address: "San Jose, Costa Rica",
     email: "info@citabox.app",
+    publicPhone: "+506 2222-3333",
+    publicEmail: "info@citabox.app",
+    bookingEnabled: true,
   })
   const [staff, setStaff] = useState(INITIAL_STAFF)
   const [showInvite, setShowInvite] = useState(false)
   const [inviteForm, setInviteForm] = useState({ name: "", email: "", role: "Doctor" })
   const [saved, setSaved] = useState(false)
 
-  const handleSaveClinic = () => {
+  useEffect(() => {
+    fetchCurrentClinic()
+      .then((data) => {
+        setClinic({
+          name: data.name,
+          taxId: data.tax_id,
+          phone: data.phone ?? "",
+          address: data.address ?? "",
+          email: data.email ?? "",
+          publicPhone: data.public_phone ?? data.phone ?? "",
+          publicEmail: data.public_email ?? data.email ?? "",
+          bookingEnabled: data.booking_enabled,
+        })
+      })
+      .catch(() => {})
+  }, [])
+
+  const handleSaveClinic = async () => {
+    await updateCurrentClinic({
+      name: clinic.name,
+      phone: clinic.phone,
+      email: clinic.email,
+      address: clinic.address,
+      public_phone: clinic.publicPhone,
+      public_email: clinic.publicEmail,
+      booking_enabled: clinic.bookingEnabled,
+    })
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -123,6 +153,37 @@ export function SettingsView() {
                     className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
                   />
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-foreground">Public Phone</label>
+                    <input
+                      type="tel"
+                      value={clinic.publicPhone}
+                      onChange={set("publicPhone")}
+                      className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-foreground">Public Email</label>
+                    <input
+                      type="email"
+                      value={clinic.publicEmail}
+                      onChange={set("publicEmail")}
+                      className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={clinic.bookingEnabled}
+                    onChange={(e) => setClinic((prev) => ({ ...prev, bookingEnabled: e.target.checked }))}
+                    className="h-4 w-4"
+                  />
+                  Online booking enabled
+                </label>
 
                 <button
                   onClick={handleSaveClinic}

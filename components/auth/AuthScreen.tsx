@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Eye, EyeOff, Activity, CheckCircle2, Loader2 } from "lucide-react"
 import { api, setAccessToken, setClinicId } from "@/lib/api-client"
 import { meToAuthUser, type AuthUser } from "@/lib/store"
-import type { LoginResponse, MeResponse } from "@/types/api"
+import type { ClinicMembershipInfo, LoginResponse, MeResponse } from "@/types/api"
 
 interface AuthScreenProps {
   onLogin: (user: AuthUser) => void
@@ -53,6 +53,7 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
   const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pendingMemberships, setPendingMemberships] = useState<ClinicMembershipInfo[] | null>(null)
 
   // Login form
   const [loginEmail, setLoginEmail] = useState("")
@@ -72,17 +73,34 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
       const loginRes = await api.post<LoginResponse>("/auth/login", { email, password }, { skipAuth: true })
       setAccessToken(loginRes.access_token)
 
-      // Pick the first clinic membership as active context
-      if (loginRes.memberships.length > 0) {
-        setClinicId(loginRes.memberships[0].clinic_id)
+      if (loginRes.memberships.length === 0) {
+        throw new Error("Your account is not linked to an active clinic")
       }
 
-      // Fetch the full user profile
+      if (loginRes.memberships.length > 1) {
+        setPendingMemberships(loginRes.memberships)
+        return
+      }
+
+      await selectClinic(loginRes.memberships[0].clinic_id)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Login failed"
+      setError(message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const selectClinic = async (clinicId: string) => {
+    setError(null)
+    setLoading(true)
+    try {
+      setClinicId(clinicId)
       const me = await api.get<MeResponse>("/auth/me")
       const user = meToAuthUser(me)
       onLogin(user)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Login failed"
+      const message = err instanceof Error ? err.message : "Could not switch clinic"
       setError(message)
     } finally {
       setLoading(false)
@@ -198,7 +216,39 @@ export function AuthScreen({ onLogin }: AuthScreenProps) {
         </div>
 
         <div className="w-full max-w-[400px]">
-          {screen === "login" ? (
+          {pendingMemberships ? (
+            <>
+              <div className="mb-8">
+                <h1 className="text-2xl font-extrabold text-foreground">Choose clinic</h1>
+                <p className="text-sm text-muted-foreground mt-1">Select the clinic workspace to open</p>
+              </div>
+
+              {error && (
+                <div className="mb-4 px-4 py-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-2.5">
+                {pendingMemberships.map((membership) => (
+                  <button
+                    key={membership.clinic_id}
+                    disabled={loading}
+                    onClick={() => selectClinic(membership.clinic_id)}
+                    className="w-full flex items-center justify-between px-5 py-3.5 rounded-md border border-border bg-white shadow-sm hover:border-[var(--neon-green)] hover:bg-[var(--neon-green-bg)] group transition-all disabled:opacity-60"
+                  >
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-foreground group-hover:text-[var(--neon-green-text)] transition-colors">
+                        {membership.clinic_name}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{membership.role}</p>
+                    </div>
+                    {loading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : screen === "login" ? (
             <>
               {/* Login header */}
               <div className="mb-8">

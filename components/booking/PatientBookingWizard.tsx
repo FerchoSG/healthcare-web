@@ -25,6 +25,7 @@ import type {
   DoctorSummary,
   TimeSlot,
   BookingConfirmation,
+  PublicClinic,
 } from "@/types/api"
 import {
   getServices,
@@ -392,7 +393,9 @@ function DesktopStepNav({ step }: { step: number }) {
   )
 }
 
-function ClinicInfoCard({ doctors }: { doctors: DoctorSummary[] }) {
+function ClinicInfoCard({ doctors, clinic }: { doctors: DoctorSummary[]; clinic?: PublicClinic }) {
+  const phone = clinic?.public_phone ?? clinic?.phone ?? "+506 2222-3344"
+  const address = clinic?.address ?? "San Jose, Costa Rica"
   return (
     <div className="rounded-lg bg-white border border-slate-100 shadow-md p-5">
       <div className="flex items-center gap-3 mb-4">
@@ -400,18 +403,18 @@ function ClinicInfoCard({ doctors }: { doctors: DoctorSummary[] }) {
           <Smile size={18} className="text-white" />
         </div>
         <div>
-          <div className="font-bold text-slate-800 text-sm">Clínica Dental DRC</div>
+          <div className="font-bold text-slate-800 text-sm">{clinic?.name ?? "Clinica Dental DRC"}</div>
           <div className="text-xs text-teal-600 font-medium">Verified Clinic</div>
         </div>
       </div>
       <div className="flex flex-col gap-2.5 text-xs text-slate-500">
         <div className="flex items-start gap-2">
           <MapPin size={13} className="text-teal-500 mt-0.5 shrink-0" />
-          <span>San José, Costa Rica · Barrio El Carmen</span>
+          <span>{address}</span>
         </div>
         <div className="flex items-start gap-2">
           <Phone size={13} className="text-teal-500 mt-0.5 shrink-0" />
-          <span>+506 2222-3344</span>
+          <span>{phone}</span>
         </div>
         <div className="flex items-start gap-2">
           <Clock size={13} className="text-teal-500 mt-0.5 shrink-0" />
@@ -540,7 +543,15 @@ function ErrorBanner({ message, onDismiss }: { message: string; onDismiss: () =>
 
 // ─── Main Wizard Component ─────────────────────────────────────────────────────
 
-export function PatientBookingWizard({ clinicId, onHome }: { clinicId: string; onHome: () => void }) {
+export function PatientBookingWizard({
+  clinicId,
+  clinic,
+  onHome,
+}: {
+  clinicId: string
+  clinic?: PublicClinic
+  onHome: () => void
+}) {
   const TOTAL = 4
   const [step, setStep]         = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -842,7 +853,7 @@ export function PatientBookingWizard({ clinicId, onHome }: { clinicId: string; o
         <div className="w-8 h-8 rounded-md bg-[#008BB0] flex items-center justify-center">
           <Smile size={15} className="text-white" />
         </div>
-        <span className="font-bold text-slate-800 text-sm">Clínica Dental DRC</span>
+        <span className="font-bold text-slate-800 text-sm">{clinic?.name ?? "Clinica Dental DRC"}</span>
       </div>
       {step > 1 && (
         <button
@@ -900,8 +911,8 @@ export function PatientBookingWizard({ clinicId, onHome }: { clinicId: string; o
             <Smile size={18} className="text-white" />
           </div>
           <div>
-            <div className="font-bold text-slate-800 text-sm leading-tight">Clínica Dental</div>
-            <div className="text-teal-600 font-semibold text-xs">DRC</div>
+            <div className="font-bold text-slate-800 text-sm leading-tight">{clinic?.name ?? "Clinica Dental"}</div>
+            <div className="text-teal-600 font-semibold text-xs">Reservas</div>
           </div>
         </div>
 
@@ -909,7 +920,7 @@ export function PatientBookingWizard({ clinicId, onHome }: { clinicId: string; o
 
         <div className="mt-auto pt-8 flex flex-col gap-3">
           {booking.serviceId && <BookingSummaryCard booking={booking} service={selectedService} doctor={selectedDoctor} />}
-          <ClinicInfoCard doctors={doctors} />
+          <ClinicInfoCard doctors={doctors} clinic={clinic} />
         </div>
       </aside>
 
@@ -917,7 +928,7 @@ export function PatientBookingWizard({ clinicId, onHome }: { clinicId: string; o
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Agendar una Cita</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Clínica Dental DRC — San José, Costa Rica</p>
+            <p className="text-sm text-slate-500 mt-0.5">{clinic?.name ?? "Clinica Dental"}{clinic?.address ? ` - ${clinic.address}` : ""}</p>
           </div>
           <div className="flex items-center gap-3">
             <StepPillBar step={step} />
@@ -948,7 +959,7 @@ export function PatientBookingWizard({ clinicId, onHome }: { clinicId: string; o
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Elige un profesional</p>
                 <DoctorGrid doctors={doctors} loading={initialLoading} selected={booking.doctorId} onSelect={id => update({ doctorId: id })} compact />
               </div>
-              <ClinicInfoCard doctors={doctors} />
+              <ClinicInfoCard doctors={doctors} clinic={clinic} />
             </div>
           </div>
         )}
@@ -984,7 +995,7 @@ export function PatientBookingWizard({ clinicId, onHome }: { clinicId: string; o
             </div>
             <div className="flex flex-col gap-5">
               {booking.serviceId && <BookingSummaryCard booking={booking} service={selectedService} doctor={selectedDoctor} />}
-              <ClinicInfoCard doctors={doctors} />
+              <ClinicInfoCard doctors={doctors} clinic={clinic} />
             </div>
           </div>
         )}
@@ -997,7 +1008,7 @@ export function PatientBookingWizard({ clinicId, onHome }: { clinicId: string; o
             </div>
             <div className="flex flex-col gap-5">
               {booking.serviceId && <BookingSummaryCard booking={booking} service={selectedService} doctor={selectedDoctor} />}
-              <ClinicInfoCard doctors={doctors} />
+              <ClinicInfoCard doctors={doctors} clinic={clinic} />
             </div>
           </div>
         )}

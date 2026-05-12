@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { type Role, type AuthUser, type View } from "@/lib/store"
 import { useTheme } from "next-themes"
-import { Search, Bell, Plus, Sun, Moon, User, Settings, LogOut, Calendar, UserPlus, FileText, Menu, Shield, Stethoscope, ClipboardList } from "lucide-react"
+import { Search, Bell, Plus, Sun, Moon, User, Settings, LogOut, Calendar, UserPlus, FileText, Menu, Shield, Stethoscope, ClipboardList, Building2 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +26,7 @@ interface TopHeaderProps {
   onNewInvoice: () => void
   onViewChange: (view: View) => void
   onMenuClick: () => void
-  onRoleSwitch: (role: Role) => void
+  onClinicSwitch: (clinicId: string) => void
 }
 
 const NOTIFICATIONS = [
@@ -62,7 +62,7 @@ export function TopHeader({
   onNewInvoice,
   onViewChange,
   onMenuClick,
-  onRoleSwitch,
+  onClinicSwitch,
 }: TopHeaderProps) {
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -110,35 +110,42 @@ export function TopHeader({
 
       {/* Right: actions */}
       <div className="flex items-center gap-1.5 lg:gap-2.5">
-        {/* Role Switcher */}
+        {/* Clinic Switcher */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3 rounded-md bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-all shadow-sm">
-              {roleIcons[role]}
-              <span className="hidden lg:inline">View as: <span className="text-foreground">{roleLabels[role]}</span></span>
+              <Building2 size={13} />
+              <span className="hidden lg:inline">
+                {authUser.membership?.clinic_name ?? "Select clinic"}
+              </span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52 rounded-lg p-1.5">
             <div className="px-3 py-2 mb-1">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Switch Role</p>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Switch Clinic</p>
             </div>
-            {(["admin", "receptionist", "doctor"] as const).map((r) => (
+            {authUser.memberships.map((membership) => (
               <DropdownMenuItem
-                key={r}
-                onClick={() => onRoleSwitch(r)}
+                key={membership.clinic_id}
+                onClick={() => onClinicSwitch(membership.clinic_id)}
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium cursor-pointer ${
-                  role === r ? "bg-foreground text-background" : ""
+                  authUser.membership?.clinic_id === membership.clinic_id ? "bg-foreground text-background" : ""
                 }`}
               >
-                {roleIcons[r]}
-                {roleLabels[r]}
-                {role === r && (
+                <Building2 size={14} />
+                <span className="truncate">{membership.clinic_name}</span>
+                {authUser.membership?.clinic_id === membership.clinic_id && (
                   <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-background/20">
                     Active
                   </span>
                 )}
               </DropdownMenuItem>
             ))}
+            <DropdownMenuSeparator className="my-1" />
+            <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+              {roleIcons[role]}
+              <span>{roleLabels[role]}</span>
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
 

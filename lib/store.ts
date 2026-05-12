@@ -13,6 +13,7 @@ export interface AuthUser {
   email: string;
   role: AuthRole;
   membership: ClinicMembershipInfo | null;
+  memberships: ClinicMembershipInfo[];
 }
 
 export const AUTH_ROLE_TO_ROLE: Record<string, Role> = {
@@ -42,6 +43,7 @@ export function meToAuthUser(me: MeResponse): AuthUser {
     email: me.email,
     role: (membership?.role ?? ApiRole.ADMIN) as AuthRole,
     membership,
+    memberships: me.memberships,
   };
 }
 
