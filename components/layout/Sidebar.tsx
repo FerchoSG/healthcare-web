@@ -75,6 +75,10 @@ function SidebarContent({
   onToggleCollapse?: () => void
 }) {
   const navItems = navConfig[role]
+  const displayRole = authUser.role === "SUPER_ADMIN" ? "Super Admin" : roleLabel[role]
+  const clinicSlug = authUser.membership?.clinic_slug
+  const bookingHref = clinicSlug ? `/book/${clinicSlug}` : "/book"
+  const portalHref = clinicSlug ? `/portal/${clinicSlug}` : "/portal"
   const initials = authUser.name
     .split(" ")
     .map((n) => n[0])
@@ -137,7 +141,7 @@ function SidebarContent({
             <Tooltip>
               <TooltipTrigger asChild>
                 <a
-                  href="/book"
+                  href={bookingHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center w-10 h-10 mx-auto rounded-md text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all mt-1"
@@ -152,7 +156,7 @@ function SidebarContent({
           ) : (
             <>
               <a
-                href="/book"
+                href={bookingHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all mt-1"
@@ -161,7 +165,7 @@ function SidebarContent({
                 Patient Booking
               </a>
               <a
-                href="/portal"
+                href={portalHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
@@ -201,7 +205,7 @@ function SidebarContent({
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-foreground truncate">{authUser.name}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{roleLabel[role]}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{displayRole}</p>
               </div>
             )}
           </div>

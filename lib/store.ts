@@ -5,7 +5,7 @@ import { Role as ApiRole } from "@/types/api";
 
 export type Role = "admin" | "receptionist" | "doctor";
 
-export type AuthRole = "ADMIN" | "STAFF" | "DOCTOR";
+export type AuthRole = "SUPER_ADMIN" | "ADMIN" | "STAFF" | "DOCTOR";
 
 export interface AuthUser {
   id: string;
@@ -17,6 +17,7 @@ export interface AuthUser {
 }
 
 export const AUTH_ROLE_TO_ROLE: Record<string, Role> = {
+  SUPER_ADMIN: "admin",
   ADMIN: "admin",
   STAFF: "receptionist",
   DOCTOR: "doctor",

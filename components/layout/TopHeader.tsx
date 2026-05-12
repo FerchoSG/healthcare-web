@@ -80,6 +80,7 @@ export function TopHeader({
     .toUpperCase()
 
   const email = authUser.email
+  const displayRole = authUser.role === "SUPER_ADMIN" ? "Super Admin" : roleLabels[role]
 
   return (
     <header className="h-[64px] shrink-0 flex items-center justify-between px-4 lg:px-6 bg-background border-b border-border">
@@ -144,7 +145,7 @@ export function TopHeader({
             <DropdownMenuSeparator className="my-1" />
             <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
               {roleIcons[role]}
-              <span>{roleLabels[role]}</span>
+              <span>{displayRole}</span>
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
