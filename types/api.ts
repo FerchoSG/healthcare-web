@@ -21,6 +21,13 @@ export enum PaymentStatus {
   PARTIAL = "PARTIAL",
 }
 
+export enum PaymentMethod {
+  SINPE_MOVIL = "SINPE_MOVIL",
+  TARJETA = "TARJETA",
+  EFECTIVO = "EFECTIVO",
+  TRANSFERENCIA = "TRANSFERENCIA",
+}
+
 export enum Gender {
   M = "M",
   F = "F",
@@ -83,6 +90,8 @@ export interface MeResponse {
 export interface Clinic {
   id: string;
   name: string;
+  clinic_type: string;
+  specialty_modules: string[];
   tax_id: string;
   slug: string;
   phone: string | null;
@@ -104,6 +113,8 @@ export interface PublicClinic {
   id: string;
   name: string;
   slug: string;
+  clinic_type: string;
+  specialty_modules: string[];
   phone: string | null;
   email: string | null;
   public_phone: string | null;
@@ -225,6 +236,15 @@ export interface Appointment {
   service: ServiceSummary | null;
 }
 
+export interface CreateAppointmentPayload {
+  patient_id: string;
+  doctor_id: string;
+  start_time: string;
+  end_time: string;
+  reason?: string;
+  service_id?: string;
+}
+
 // ─── Medical Record ───────────────────────────────────────────────────────────
 
 export interface GynoRecord {
@@ -261,6 +281,31 @@ export interface MedicalRecord {
   patient: PatientSummary;
   gynoRecord: GynoRecord | null;
   dentalRecords: DentalRecord[];
+  prescriptions: Prescription[];
+}
+
+export interface PrescriptionMedication {
+  name: string;
+  dosage: string;
+  frequency: string;
+}
+
+export interface Prescription {
+  id: string;
+  medical_record_id?: string;
+  medications: PrescriptionMedication[];
+  additional_notes: string | null;
+  pdf_url: string | null;
+  createdAt: string;
+  updatedAt?: string;
+  diagnosis?: string | null;
+  treatment_plan?: string | null;
+  doctor?: UserSummary;
+  medicalRecord?: {
+    diagnosis: string | null;
+    treatment_plan: string | null;
+    doctor: UserSummary;
+  };
 }
 
 // ─── Invoice ──────────────────────────────────────────────────────────────────
@@ -269,17 +314,28 @@ export interface Invoice {
   id: string;
   clinic_id: string;
   patient_id: string;
+  appointment_id: string | null;
   hacienda_consecutive: string | null;
   numeric_key: string | null;
   total_amount: number;
   service_description: string | null;
   hacienda_status: HaciendaStatus;
   payment_status: PaymentStatus;
+  payment_method: PaymentMethod | null;
+  payment_reference: string | null;
+  paid_amount: number | null;
+  paid_at: string | null;
+  notes: string | null;
   pdf_url: string | null;
   xml_url: string | null;
   createdAt: string;
   updatedAt: string;
   patient: PatientSummary;
+  appointment?: {
+    id: string;
+    start_time: string;
+    status: AppointmentStatus;
+  } | null;
 }
 
 // ─── Analytics ────────────────────────────────────────────────────────────────

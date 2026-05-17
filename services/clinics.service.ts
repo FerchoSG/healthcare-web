@@ -5,6 +5,8 @@ export type UpdateClinicPayload = Partial<
   Pick<
     Clinic,
     | "name"
+    | "clinic_type"
+    | "specialty_modules"
     | "phone"
     | "email"
     | "address"

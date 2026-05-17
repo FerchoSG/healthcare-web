@@ -5,17 +5,16 @@ import {
   LayoutDashboard,
   Calendar,
   Users,
-  CreditCard,
   Settings,
   ClipboardList,
   Stethoscope,
-  FileText,
   Activity,
   ExternalLink,
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { BRAND_NAME } from "@/lib/brand"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
@@ -32,28 +31,25 @@ interface SidebarProps {
 
 const navConfig: Record<Role, { icon: React.ReactNode; label: string; view: View }[]> = {
   admin: [
-    { icon: <LayoutDashboard size={18} />, label: "Dashboard", view: "dashboard" },
-    { icon: <Calendar size={18} />, label: "Calendar", view: "calendar" },
-    { icon: <Users size={18} />, label: "Patients", view: "patients" },
-    { icon: <CreditCard size={18} />, label: "Billing", view: "billing" },
-    { icon: <Settings size={18} />, label: "Settings", view: "settings" },
+    { icon: <LayoutDashboard size={18} />, label: "Panel", view: "dashboard" },
+    { icon: <Calendar size={18} />, label: "Calendario", view: "calendar" },
+    { icon: <Users size={18} />, label: "Pacientes", view: "patients" },
+    { icon: <Settings size={18} />, label: "Configuración", view: "settings" },
   ],
   receptionist: [
-    { icon: <ClipboardList size={18} />, label: "Front Desk", view: "front-desk" },
-    { icon: <Calendar size={18} />, label: "Calendar", view: "calendar" },
-    { icon: <Users size={18} />, label: "Patients", view: "patients" },
-    { icon: <CreditCard size={18} />, label: "Billing", view: "billing" },
+    { icon: <ClipboardList size={18} />, label: "Recepción", view: "front-desk" },
+    { icon: <Calendar size={18} />, label: "Calendario", view: "calendar" },
+    { icon: <Users size={18} />, label: "Pacientes", view: "patients" },
   ],
   doctor: [
-    { icon: <Stethoscope size={18} />, label: "My Schedule", view: "schedule" },
-    { icon: <Users size={18} />, label: "Patients", view: "patients" },
-    { icon: <FileText size={18} />, label: "Medical Records", view: "medical-records" },
+    { icon: <Stethoscope size={18} />, label: "Mi agenda", view: "schedule" },
+    { icon: <Users size={18} />, label: "Pacientes", view: "patients" },
   ],
 }
 
 const roleLabel: Record<Role, string> = {
-  admin: "Administrator",
-  receptionist: "Receptionist",
+  admin: "Administrador",
+  receptionist: "Recepción",
   doctor: "Doctor",
 }
 
@@ -75,7 +71,7 @@ function SidebarContent({
   onToggleCollapse?: () => void
 }) {
   const navItems = navConfig[role]
-  const displayRole = authUser.role === "SUPER_ADMIN" ? "Super Admin" : roleLabel[role]
+  const displayRole = authUser.role === "SUPER_ADMIN" ? "Superadministrador" : roleLabel[role]
   const clinicSlug = authUser.membership?.clinic_slug
   const bookingHref = clinicSlug ? `/book/${clinicSlug}` : "/book"
   const portalHref = clinicSlug ? `/portal/${clinicSlug}` : "/portal"
@@ -99,12 +95,12 @@ function SidebarContent({
           <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--neon-green)" }}>
             <Activity size={16} className="text-white" strokeWidth={2.5} />
           </div>
-          {!collapsed && <span className="font-bold text-base text-foreground tracking-tight">CitaBox</span>}
+          {!collapsed && <span className="font-bold text-base text-foreground tracking-tight">{BRAND_NAME}</span>}
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 flex flex-col gap-0.5">
-          {!collapsed && <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-3 mb-2">Menu</p>}
+          {!collapsed && <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-3 mb-2">Menú</p>}
           {navItems.map((item) => {
             const isActive = activeView === item.view
             const button = (
@@ -150,7 +146,7 @@ function SidebarContent({
                 </a>
               </TooltipTrigger>
               <TooltipContent side="right" className="rounded-md text-xs font-semibold">
-                Patient Booking
+                Reservas
               </TooltipContent>
             </Tooltip>
           ) : (
@@ -162,7 +158,7 @@ function SidebarContent({
                 className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all mt-1"
               >
                 <ExternalLink size={18} />
-                Patient Booking
+                Reservas
               </a>
               <a
                 href={portalHref}
@@ -171,7 +167,7 @@ function SidebarContent({
                 className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
               >
                 <ExternalLink size={18} />
-                Patient Portal
+                Portal del paciente
               </a>
             </>
           )}
@@ -186,7 +182,7 @@ function SidebarContent({
               collapsed && "justify-center px-0 w-10 h-10 mx-auto"
             )}
           >
-            {collapsed ? <ChevronsRight size={16} /> : <><ChevronsLeft size={16} /> Collapse</>}
+            {collapsed ? <ChevronsRight size={16} /> : <><ChevronsLeft size={16} /> Colapsar</>}
           </button>
         )}
 
@@ -239,8 +235,8 @@ export function Sidebar({ role, authUser, activeView, onViewChange, collapsed, o
       <Sheet open={mobileOpen} onOpenChange={(o) => !o && onMobileClose?.()}>
         <SheetContent side="left" className="w-[260px] p-0 rounded-r-lg" aria-describedby={undefined}>
           <SheetHeader className="sr-only">
-            <SheetTitle>Navigation Menu</SheetTitle>
-            <SheetDescription>Main navigation for CitaBox</SheetDescription>
+            <SheetTitle>Menú de navegación</SheetTitle>
+            <SheetDescription>Navegación principal de {BRAND_NAME}</SheetDescription>
           </SheetHeader>
           <SidebarContent
             role={role}

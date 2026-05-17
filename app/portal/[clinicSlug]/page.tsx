@@ -2,8 +2,9 @@
 
 import { use, useEffect, useState } from "react"
 import { Activity, Calendar, LogOut } from "lucide-react"
+import { formatClinicDateTime } from "@/lib/clinic-time"
 import { getPublicClinic } from "@/services/booking.service"
-import type { PublicClinic } from "@/types/api"
+import type { Prescription, PublicClinic } from "@/types/api"
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001"
 
@@ -18,14 +19,6 @@ type PortalAppointment = {
   start_time: string
   status: string
   reason: string | null
-  doctor: { first_name: string; last_name: string }
-}
-
-type Prescription = {
-  id: string
-  diagnosis: string | null
-  treatment_plan: string | null
-  createdAt: string
   doctor: { first_name: string; last_name: string }
 }
 
@@ -45,7 +38,7 @@ export default function ClinicPortalPage({
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    getPublicClinic(clinicSlug).then(setClinic).catch((err) => setError(err instanceof Error ? err.message : "Clinic not found"))
+    getPublicClinic(clinicSlug).then(setClinic).catch((err) => setError(err instanceof Error ? err.message : "Clínica no encontrada"))
   }, [clinicSlug])
 
   useEffect(() => {
@@ -61,7 +54,7 @@ export default function ClinicPortalPage({
         setAppointments(Array.isArray(nextAppointments) ? nextAppointments : [])
         setPrescriptions(Array.isArray(nextPrescriptions) ? nextPrescriptions : [])
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Could not load portal"))
+      .catch((err) => setError(err instanceof Error ? err.message : "No se pudo cargar el portal"))
   }, [token])
 
   const login = async (event: React.FormEvent) => {
@@ -98,12 +91,12 @@ export default function ClinicPortalPage({
               <Activity size={24} className="text-white" />
             </div>
             <h1 className="text-lg font-bold text-slate-900">{clinic.name}</h1>
-            <p className="text-xs text-slate-500">Patient Portal</p>
+            <p className="text-xs text-slate-500">Portal del paciente</p>
           </div>
           {error && <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</div>}
-          <input value={identification} onChange={(e) => setIdentification(e.target.value)} placeholder="Identification" className="w-full px-4 py-3 rounded-md border border-slate-200 text-sm" />
-          <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Password" className="w-full px-4 py-3 rounded-md border border-slate-200 text-sm" />
-          <button className="w-full py-3 rounded-md bg-slate-900 text-white text-sm font-semibold">Sign In</button>
+          <input value={identification} onChange={(e) => setIdentification(e.target.value)} placeholder="Identificación" className="w-full px-4 py-3 rounded-md border border-slate-200 text-sm" />
+          <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Contraseña" className="w-full px-4 py-3 rounded-md border border-slate-200 text-sm" />
+          <button className="w-full py-3 rounded-md bg-slate-900 text-white text-sm font-semibold">Ingresar</button>
         </form>
       </div>
     )
@@ -121,31 +114,36 @@ export default function ClinicPortalPage({
       </header>
       <main className="max-w-lg mx-auto p-4 space-y-4">
         <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-5">
-          <p className="text-xs text-slate-500">Welcome back</p>
-          <h2 className="text-xl font-bold text-slate-900">Hello, {profile.first_name}</h2>
+          <p className="text-xs text-slate-500">Bienvenido de nuevo</p>
+          <h2 className="text-xl font-bold text-slate-900">Hola, {profile.first_name}</h2>
         </section>
         <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-5">
-          <h3 className="text-sm font-bold text-slate-900 mb-3">Appointments</h3>
+          <h3 className="text-sm font-bold text-slate-900 mb-3">Citas</h3>
           <div className="space-y-2">
             {appointments.map((appointment) => (
               <div key={appointment.id} className="rounded-md bg-slate-50 border border-slate-100 p-3 text-sm">
-                <div className="flex items-center gap-2 font-semibold text-slate-900"><Calendar size={14} />{new Date(appointment.start_time).toLocaleString()}</div>
+                <div className="flex items-center gap-2 font-semibold text-slate-900"><Calendar size={14} />{formatClinicDateTime(appointment.start_time)}</div>
                 <p className="text-xs text-slate-500 mt-1">Dr. {appointment.doctor.first_name} {appointment.doctor.last_name} - {appointment.status}</p>
               </div>
             ))}
-            {appointments.length === 0 && <p className="text-sm text-slate-500">No appointments found.</p>}
+            {appointments.length === 0 && <p className="text-sm text-slate-500">No se encontraron citas.</p>}
           </div>
         </section>
         <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-5">
-          <h3 className="text-sm font-bold text-slate-900 mb-3">Prescriptions</h3>
+          <h3 className="text-sm font-bold text-slate-900 mb-3">Indicaciones</h3>
           <div className="space-y-2">
             {prescriptions.map((prescription) => (
               <div key={prescription.id} className="rounded-md bg-slate-50 border border-slate-100 p-3 text-sm">
-                <p className="font-semibold text-slate-900">{prescription.diagnosis ?? "Medical note"}</p>
-                <p className="text-xs text-slate-500 mt-1">{prescription.treatment_plan ?? "No treatment plan recorded"}</p>
+                <p className="font-semibold text-slate-900">{prescription.medicalRecord?.diagnosis ?? "Receta médica"}</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {prescription.medications.map((medication) => `${medication.name} (${medication.dosage})`).join(", ") || "Sin medicamentos registrados"}
+                </p>
+                <p className="text-[11px] text-slate-500 mt-2">
+                  {prescription.additional_notes ?? prescription.medicalRecord?.treatment_plan ?? "Sin indicaciones adicionales"}
+                </p>
               </div>
             ))}
-            {prescriptions.length === 0 && <p className="text-sm text-slate-500">No prescriptions found.</p>}
+            {prescriptions.length === 0 && <p className="text-sm text-slate-500">No se encontraron indicaciones.</p>}
           </div>
         </section>
       </main>

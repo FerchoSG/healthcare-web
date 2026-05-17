@@ -33,6 +33,8 @@ import {
   getAvailableSlots,
   createBooking,
 } from "@/services/booking.service"
+import { BRAND_NAME } from "@/lib/brand"
+import { formatClinicDateFromKey, getClinicTodayKey, parseClinicDateKey } from "@/lib/clinic-time"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,8 +51,9 @@ export interface BookingFormData {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STEP_LABELS = ["Service","Date","Info","Review"]
-const TODAY = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d })()
+const STEP_LABELS = ["Servicio","Fecha","Datos","Revisión"]
+const TODAY_KEY = getClinicTodayKey()
+const TODAY = parseClinicDateKey(TODAY_KEY)
 const AVATAR_COLORS = ["#5EEAD4", "#7DD3FC", "#FDE68A", "#DDA0DD", "#96CEB4", "#FF6B6B", "#4ECDC4"]
 
 const EMPTY_BOOKING: BookingFormData = {
@@ -78,14 +81,12 @@ function formatDuration(minutes: number): string {
 
 function formatDateShort(iso: string): string | null {
   if (!iso) return null
-  const [y, m, d] = iso.split("-")
-  return new Date(+y, +m - 1, +d).toLocaleDateString("es-CR", { weekday: "short", month: "short", day: "numeric" })
+  return formatClinicDateFromKey(iso, { weekday: "short", month: "short", day: "numeric" })
 }
 
 function formatDateLong(iso: string): string {
   if (!iso) return "—"
-  const [y, m, d] = iso.split("-")
-  return new Date(+y, +m - 1, +d).toLocaleDateString("es-CR", { weekday: "long", month: "long", day: "numeric" })
+  return formatClinicDateFromKey(iso, { weekday: "long", month: "long", day: "numeric" })
 }
 
 function formatSlotTime(time: string): string {
@@ -96,7 +97,7 @@ function formatSlotTime(time: string): string {
 }
 
 function getDoctorDisplayName(doc: DoctorSummary): string {
-  if (doc.id === "any") return "Any Available"
+  if (doc.id === "any") return "Cualquier disponible"
   return `Dr. ${doc.first_name} ${doc.last_name?.[0] ?? ""}.`
 }
 
@@ -118,21 +119,21 @@ function getServiceIcon(name: string): React.ReactNode {
 // ─── Sub-Components (defined OUTSIDE main component to prevent remount) ────────
 
 function MiniCalendar({ selected, onSelect }: { selected: string; onSelect: (d: string) => void }) {
-  const [vm, setVm] = useState(TODAY.getMonth())
-  const vy = TODAY.getFullYear()
+  const [vm, setVm] = useState(TODAY.getUTCMonth())
+  const vy = TODAY.getUTCFullYear()
 
-  const firstDay    = new Date(vy, vm, 1).getDay()
-  const daysInMonth = new Date(vy, vm + 1, 0).getDate()
-  const label       = new Date(vy, vm).toLocaleString("en-US", { month: "long", year: "numeric" })
+  const firstDay    = new Date(Date.UTC(vy, vm, 1, 12)).getUTCDay()
+  const daysInMonth = new Date(Date.UTC(vy, vm + 1, 0, 12)).getUTCDate()
+  const label       = formatClinicDateFromKey(`${vy}-${String(vm + 1).padStart(2,"0")}-01`, { month: "long", year: "numeric" })
   const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
   const iso  = (d: number) => `${vy}-${String(vm + 1).padStart(2,"0")}-${String(d).padStart(2,"0")}`
-  const past = (d: number) => new Date(vy, vm, d) < TODAY
+  const past = (d: number) => iso(d) < TODAY_KEY
 
   return (
     <div className="rounded-lg bg-white border border-slate-100 shadow-md p-4">
       <div className="flex items-center justify-between mb-3">
         <button
-          onClick={() => setVm(m => Math.max(m - 1, TODAY.getMonth()))}
+          onClick={() => setVm(m => Math.max(m - 1, TODAY.getUTCMonth()))}
           className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all"
         ><ChevronLeft size={14} /></button>
         <span className="text-sm font-bold text-slate-800">{label}</span>
@@ -178,7 +179,7 @@ function DoctorGrid({ doctors, selected, onSelect, compact = false, loading = fa
   compact?: boolean
   loading?: boolean
 }) {
-  const ANY_OPTION: DoctorSummary = { id: "any", first_name: "Any", last_name: "Available", specialty: "We'll match you" }
+  const ANY_OPTION: DoctorSummary = { id: "any", first_name: "Cualquiera", last_name: "Disponible", specialty: "Te asignaremos uno" }
   const allDoctors = [ANY_OPTION, ...doctors]
 
   if (loading) {
@@ -214,10 +215,10 @@ function DoctorGrid({ doctors, selected, onSelect, compact = false, loading = fa
             >{initials}</div>
             <div className="text-center w-16">
               <div className="text-[11px] font-semibold text-slate-700 truncate">
-                {doc.id === "any" ? "Any" : doc.first_name}
+                {doc.id === "any" ? "Cualquiera" : doc.first_name}
               </div>
               <div className="text-[10px] text-slate-400 leading-tight truncate">
-                {doc.id === "any" ? "Available" : (doc.specialty?.split(" ")[0] ?? "")}
+                {doc.id === "any" ? "Disponible" : (doc.specialty?.split(" ")[0] ?? "")}
               </div>
             </div>
           </button>
@@ -403,8 +404,8 @@ function ClinicInfoCard({ doctors, clinic }: { doctors: DoctorSummary[]; clinic?
           <Smile size={18} className="text-white" />
         </div>
         <div>
-          <div className="font-bold text-slate-800 text-sm">{clinic?.name ?? "Clinica Dental DRC"}</div>
-          <div className="text-xs text-teal-600 font-medium">Verified Clinic</div>
+          <div className="font-bold text-slate-800 text-sm">{clinic?.name ?? BRAND_NAME}</div>
+          <div className="text-xs text-teal-600 font-medium">Clínica verificada</div>
         </div>
       </div>
       <div className="flex flex-col gap-2.5 text-xs text-slate-500">
@@ -853,7 +854,7 @@ export function PatientBookingWizard({
         <div className="w-8 h-8 rounded-md bg-[#008BB0] flex items-center justify-center">
           <Smile size={15} className="text-white" />
         </div>
-        <span className="font-bold text-slate-800 text-sm">{clinic?.name ?? "Clinica Dental DRC"}</span>
+        <span className="font-bold text-slate-800 text-sm">{clinic?.name ?? BRAND_NAME}</span>
       </div>
       {step > 1 && (
         <button
@@ -911,7 +912,7 @@ export function PatientBookingWizard({
             <Smile size={18} className="text-white" />
           </div>
           <div>
-            <div className="font-bold text-slate-800 text-sm leading-tight">{clinic?.name ?? "Clinica Dental"}</div>
+            <div className="font-bold text-slate-800 text-sm leading-tight">{clinic?.name ?? BRAND_NAME}</div>
             <div className="text-teal-600 font-semibold text-xs">Reservas</div>
           </div>
         </div>
@@ -928,7 +929,7 @@ export function PatientBookingWizard({
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Agendar una Cita</h1>
-            <p className="text-sm text-slate-500 mt-0.5">{clinic?.name ?? "Clinica Dental"}{clinic?.address ? ` - ${clinic.address}` : ""}</p>
+            <p className="text-sm text-slate-500 mt-0.5">{clinic?.name ?? BRAND_NAME}{clinic?.address ? ` - ${clinic.address}` : ""}</p>
           </div>
           <div className="flex items-center gap-3">
             <StepPillBar step={step} />

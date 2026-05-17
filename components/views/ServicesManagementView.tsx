@@ -1,57 +1,38 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
-  Plus,
-  Pencil,
-  Trash2,
-  Loader2,
-  Search,
+  AlertCircle,
   Clock,
   DollarSign,
-  AlertCircle,
+  Loader2,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import {
-  fetchServices,
   createService,
-  updateService,
   deleteService,
   fetchDoctors,
+  fetchServices,
+  updateService,
 } from "@/services/clinic-services.service"
 import type {
-  Service,
   CreateServicePayload,
-  UpdateServicePayload,
   DoctorSummary,
+  Service,
+  UpdateServicePayload,
 } from "@/types/api"
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("es-CR", {
-    style: "currency",
-    currency: "CRC",
-    minimumFractionDigits: 0,
-  }).format(cents / 100)
-}
-
-function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes} min`
-  const h = Math.floor(minutes / 60)
-  const m = minutes % 60
-  return m > 0 ? `${h}h ${m}min` : `${h}h`
-}
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface FormState {
   name: string
@@ -69,61 +50,61 @@ const EMPTY_FORM: FormState = {
   doctor_ids: [],
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+function formatPrice(cents: number): string {
+  return new Intl.NumberFormat("es-CR", {
+    style: "currency",
+    currency: "CRC",
+    minimumFractionDigits: 0,
+  }).format(cents / 100)
+}
+
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  return rest > 0 ? `${hours} h ${rest} min` : `${hours} h`
+}
 
 export function ServicesManagementView() {
   const { toast } = useToast()
 
-  // Data
   const [services, setServices] = useState<Service[]>([])
   const [doctors, setDoctors] = useState<DoctorSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState("")
 
-  // Dialog
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingService, setEditingService] = useState<Service | null>(null)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
-  // Delete confirmation
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deletingName, setDeletingName] = useState("")
   const [deleting, setDeleting] = useState(false)
-
-  // Search
-  const [search, setSearch] = useState("")
-
-  // ── Fetch ─────────────────────────────────────────────────────────────────
 
   const load = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
-      const [svcData, docData] = await Promise.all([
-        fetchServices(),
-        fetchDoctors(),
-      ])
+      const [svcData, docData] = await Promise.all([fetchServices(), fetchDoctors()])
       setServices(svcData)
       setDoctors(docData)
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to load data"
-      setError(message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudieron cargar los datos")
     } finally {
       setLoading(false)
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
-  // ── Filtered services ─────────────────────────────────────────────────────
-
-  const filtered = services.filter((s) =>
-    s.name.toLowerCase().includes(search.toLowerCase()),
+  const filtered = services.filter((service) =>
+    service.name.toLowerCase().includes(search.toLowerCase()),
   )
-
-  // ── Dialog open/close ─────────────────────────────────────────────────────
 
   const openCreate = () => {
     setEditingService(null)
@@ -132,32 +113,39 @@ export function ServicesManagementView() {
     setDialogOpen(true)
   }
 
-  const openEdit = (svc: Service) => {
-    setEditingService(svc)
+  const openEdit = (service: Service) => {
+    setEditingService(service)
     setForm({
-      name: svc.name,
-      description: svc.description ?? "",
-      duration_minutes: svc.duration_minutes,
-      price: svc.price,
-      doctor_ids: svc.doctors.map((d) => d.id),
+      name: service.name,
+      description: service.description ?? "",
+      duration_minutes: service.duration_minutes,
+      price: service.price,
+      doctor_ids: service.doctors.map((doctor) => doctor.id),
     })
     setFormError(null)
     setDialogOpen(true)
   }
 
-  // ── Submit ────────────────────────────────────────────────────────────────
+  const toggleDoctor = (doctorId: string) => {
+    setForm((prev) => ({
+      ...prev,
+      doctor_ids: prev.doctor_ids.includes(doctorId)
+        ? prev.doctor_ids.filter((id) => id !== doctorId)
+        : [...prev.doctor_ids, doctorId],
+    }))
+  }
 
   const handleSubmit = async () => {
     if (!form.name.trim()) {
-      setFormError("Service name is required")
+      setFormError("El nombre del servicio es obligatorio")
       return
     }
     if (form.duration_minutes < 1) {
-      setFormError("Duration must be at least 1 minute")
+      setFormError("La duración debe ser de al menos 1 minuto")
       return
     }
     if (form.price < 0) {
-      setFormError("Price cannot be negative")
+      setFormError("El precio no puede ser negativo")
       return
     }
 
@@ -174,7 +162,7 @@ export function ServicesManagementView() {
           doctor_ids: form.doctor_ids,
         }
         await updateService(editingService.id, payload)
-        toast({ title: "Service updated", description: `"${form.name}" has been updated.` })
+        toast({ title: "Servicio actualizado", description: `"${form.name}" fue actualizado.` })
       } else {
         const payload: CreateServicePayload = {
           name: form.name.trim(),
@@ -184,74 +172,60 @@ export function ServicesManagementView() {
           doctor_ids: form.doctor_ids.length ? form.doctor_ids : undefined,
         }
         await createService(payload)
-        toast({ title: "Service created", description: `"${form.name}" has been added.` })
+        toast({ title: "Servicio creado", description: `"${form.name}" fue agregado.` })
       }
 
       setDialogOpen(false)
       await load()
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Operation failed"
-      setFormError(message)
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "La operación falló")
     } finally {
       setSubmitting(false)
     }
   }
 
-  // ── Delete ────────────────────────────────────────────────────────────────
-
-  const confirmDelete = (svc: Service) => {
-    setDeletingId(svc.id)
-    setDeletingName(svc.name)
+  const confirmDelete = (service: Service) => {
+    setDeletingId(service.id)
+    setDeletingName(service.name)
   }
 
   const handleDelete = async () => {
     if (!deletingId) return
+
     try {
       setDeleting(true)
       await deleteService(deletingId)
-      toast({ title: "Service deleted", description: `"${deletingName}" has been removed.` })
+      toast({ title: "Servicio eliminado", description: `"${deletingName}" fue eliminado.` })
       setDeletingId(null)
       await load()
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Delete failed"
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo eliminar el servicio"
       toast({ variant: "destructive", title: "Error", description: message })
     } finally {
       setDeleting(false)
     }
   }
 
-  // ── Doctor toggle ─────────────────────────────────────────────────────────
-
-  const toggleDoctor = (doctorId: string) => {
-    setForm((prev) => ({
-      ...prev,
-      doctor_ids: prev.doctor_ids.includes(doctorId)
-        ? prev.doctor_ids.filter((id) => id !== doctorId)
-        : [...prev.doctor_ids, doctorId],
-    }))
-  }
-
-  // ── Render ────────────────────────────────────────────────────────────────
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-[#008BB0]" />
-        <span className="ml-2 text-sm text-slate-500">Loading services…</span>
+        <span className="ml-2 text-sm text-slate-500">Cargando servicios...</span>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 gap-3">
+      <div className="flex h-64 flex-col items-center justify-center gap-3">
         <AlertCircle className="h-8 w-8 text-red-500" />
         <p className="text-sm text-red-600">{error}</p>
         <button
+          type="button"
           onClick={load}
-          className="px-4 py-2 rounded-md bg-[#008BB0] text-white text-xs font-semibold hover:opacity-90 transition-all"
+          className="rounded-md bg-[#008BB0] px-4 py-2 text-xs font-semibold text-white transition-all hover:opacity-90"
         >
-          Retry
+          Reintentar
         </button>
       </div>
     )
@@ -259,46 +233,44 @@ export function ServicesManagementView() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-sm font-bold text-foreground">Services Catalog</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {services.length} service{services.length !== 1 ? "s" : ""} configured
+          <h3 className="text-sm font-bold text-foreground">Catálogo de servicios</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {services.length} servicio{services.length !== 1 ? "s" : ""} configurado{services.length !== 1 ? "s" : ""}
           </p>
         </div>
         <button
+          type="button"
           onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 rounded-md bg-[#008BB0] text-white text-xs font-semibold hover:opacity-90 transition-all w-fit"
+          className="flex w-fit items-center gap-2 rounded-md bg-[#008BB0] px-4 py-2 text-xs font-semibold text-white transition-all hover:opacity-90"
         >
           <Plus size={14} />
-          New Service
+          Nuevo servicio
         </button>
       </div>
 
-      {/* Search bar */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
-          placeholder="Search services…"
+          placeholder="Buscar servicios..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2.5 rounded-md bg-white text-sm border border-slate-200 outline-none focus:ring-2 focus:ring-[#008BB0]/30 focus:border-[#008BB0] transition-all"
+          className="w-full rounded-md border border-slate-200 bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-all focus:border-[#008BB0] focus:ring-2 focus:ring-[#008BB0]/30"
         />
       </div>
 
-      {/* Services table */}
-      <div className="bg-white rounded-lg shadow-md border border-slate-200 overflow-x-auto">
-        <table className="w-full text-sm min-w-[700px]">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-md">
+        <table className="w-full min-w-[700px] text-sm">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50/60">
-              {["Service", "Duration", "Price", "Doctors", "Status", ""].map((h) => (
+              {["Servicio", "Duración", "Precio", "Doctores", "Estado", ""].map((heading) => (
                 <th
-                  key={h}
-                  className="text-left text-[11px] font-semibold text-slate-500 px-5 py-3 uppercase tracking-wide"
+                  key={heading}
+                  className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500"
                 >
-                  {h}
+                  {heading}
                 </th>
               ))}
             </tr>
@@ -307,86 +279,75 @@ export function ServicesManagementView() {
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-5 py-10 text-center text-sm text-slate-400">
-                  {search ? "No services match your search." : "No services yet. Create your first one."}
+                  {search ? "No hay servicios que coincidan con la búsqueda." : "Aún no hay servicios. Crea el primero."}
                 </td>
               </tr>
             ) : (
-              filtered.map((svc) => (
+              filtered.map((service) => (
                 <tr
-                  key={svc.id}
-                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-all"
+                  key={service.id}
+                  className="border-b border-slate-100 transition-all last:border-0 hover:bg-slate-50/50"
                 >
-                  {/* Name & description */}
                   <td className="px-5 py-3.5">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-xs font-semibold text-foreground">{svc.name}</span>
-                      {svc.description && (
-                        <span className="text-[11px] text-slate-400 line-clamp-1">{svc.description}</span>
+                      <span className="text-xs font-semibold text-foreground">{service.name}</span>
+                      {service.description && (
+                        <span className="line-clamp-1 text-[11px] text-slate-400">{service.description}</span>
                       )}
                     </div>
                   </td>
-
-                  {/* Duration */}
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-1.5 text-xs text-slate-600">
                       <Clock size={12} className="text-slate-400" />
-                      {formatDuration(svc.duration_minutes)}
+                      {formatDuration(service.duration_minutes)}
                     </div>
                   </td>
-
-                  {/* Price */}
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700">
                       <DollarSign size={12} className="text-slate-400" />
-                      {formatPrice(svc.price)}
+                      {formatPrice(service.price)}
                     </div>
                   </td>
-
-                  {/* Doctors */}
                   <td className="px-5 py-3.5">
-                    {svc.doctors.length > 0 ? (
+                    {service.doctors.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
-                        {svc.doctors.map((doc) => (
+                        {service.doctors.map((doctor) => (
                           <span
-                            key={doc.id}
-                            className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md bg-cyan-50 text-cyan-800 border border-cyan-100"
+                            key={doctor.id}
+                            className="inline-flex items-center gap-1 rounded-md border border-cyan-100 bg-cyan-50 px-2 py-0.5 text-[11px] font-medium text-cyan-800"
                           >
-                            {doc.first_name} {doc.last_name}
+                            {doctor.first_name} {doctor.last_name}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <span className="text-[11px] text-slate-400 italic">All doctors</span>
+                      <span className="text-[11px] italic text-slate-400">Todos los doctores</span>
                     )}
                   </td>
-
-                  {/* Status */}
                   <td className="px-5 py-3.5">
                     <span
-                      className={`text-[11px] font-semibold px-2.5 py-1 rounded-md ${
-                        svc.is_active
-                          ? "text-emerald-700 bg-emerald-50"
-                          : "text-slate-500 bg-slate-100"
+                      className={`rounded-md px-2.5 py-1 text-[11px] font-semibold ${
+                        service.is_active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
                       }`}
                     >
-                      {svc.is_active ? "Active" : "Inactive"}
+                      {service.is_active ? "Activo" : "Inactivo"}
                     </span>
                   </td>
-
-                  {/* Actions */}
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-1.5">
                       <button
-                        onClick={() => openEdit(svc)}
-                        className="w-7 h-7 rounded-md bg-slate-100 flex items-center justify-center text-slate-500 hover:text-[#008BB0] hover:bg-cyan-50 transition-all"
-                        title="Edit"
+                        type="button"
+                        onClick={() => openEdit(service)}
+                        className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-slate-500 transition-all hover:bg-cyan-50 hover:text-[#008BB0]"
+                        title="Editar"
                       >
                         <Pencil size={12} />
                       </button>
                       <button
-                        onClick={() => confirmDelete(svc)}
-                        className="w-7 h-7 rounded-md bg-slate-100 flex items-center justify-center text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all"
-                        title="Delete"
+                        type="button"
+                        onClick={() => confirmDelete(service)}
+                        className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-slate-500 transition-all hover:bg-red-50 hover:text-red-600"
+                        title="Eliminar"
                       >
                         <Trash2 size={12} />
                       </button>
@@ -399,120 +360,112 @@ export function ServicesManagementView() {
         </table>
       </div>
 
-      {/* ── Create/Edit Dialog ───────────────────────────────────────────────── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-white rounded-lg shadow-md border border-slate-200 sm:max-w-lg">
+        <DialogContent className="border border-slate-200 bg-white shadow-md sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-foreground">
-              {editingService ? "Edit Service" : "New Service"}
+              {editingService ? "Editar servicio" : "Nuevo servicio"}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-col gap-4 mt-2">
+          <div className="mt-2 flex flex-col gap-4">
             {formError && (
-              <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+              <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
                 <AlertCircle size={14} />
                 {formError}
               </div>
             )}
 
-            {/* Name */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-foreground">
-                Service Name <span className="text-red-500">*</span>
+                Nombre del servicio <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="e.g. Teeth Cleaning"
-                className="w-full px-3 py-2.5 rounded-md bg-white text-sm border border-slate-200 outline-none focus:ring-2 focus:ring-[#008BB0]/30 focus:border-[#008BB0] transition-all"
+                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="Ej. Consulta general"
+                className="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-[#008BB0] focus:ring-2 focus:ring-[#008BB0]/30"
               />
             </div>
 
-            {/* Description */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">Description</label>
+              <label className="text-xs font-semibold text-foreground">Descripción</label>
               <textarea
                 value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="Brief description of the service"
+                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+                placeholder="Descripción breve del servicio"
                 rows={2}
-                className="w-full px-3 py-2.5 rounded-md bg-white text-sm border border-slate-200 outline-none focus:ring-2 focus:ring-[#008BB0]/30 focus:border-[#008BB0] transition-all resize-none"
+                className="w-full resize-none rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-[#008BB0] focus:ring-2 focus:ring-[#008BB0]/30"
               />
             </div>
 
-            {/* Duration & Price */}
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-foreground">
-                  Duration (minutes) <span className="text-red-500">*</span>
+                  Duración (minutos) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
                   min={1}
                   value={form.duration_minutes}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, duration_minutes: parseInt(e.target.value) || 0 }))
+                    setForm((prev) => ({ ...prev, duration_minutes: parseInt(e.target.value, 10) || 0 }))
                   }
-                  className="w-full px-3 py-2.5 rounded-md bg-white text-sm border border-slate-200 outline-none focus:ring-2 focus:ring-[#008BB0]/30 focus:border-[#008BB0] transition-all"
+                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-[#008BB0] focus:ring-2 focus:ring-[#008BB0]/30"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-foreground">
-                  Price (cents CRC) <span className="text-red-500">*</span>
+                  Precio (colones CRC) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
                   min={0}
                   value={form.price}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, price: parseInt(e.target.value) || 0 }))
+                    setForm((prev) => ({ ...prev, price: parseInt(e.target.value, 10) || 0 }))
                   }
-                  className="w-full px-3 py-2.5 rounded-md bg-white text-sm border border-slate-200 outline-none focus:ring-2 focus:ring-[#008BB0]/30 focus:border-[#008BB0] transition-all"
+                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-[#008BB0] focus:ring-2 focus:ring-[#008BB0]/30"
                 />
               </div>
             </div>
 
-            {/* Doctor Assignment */}
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold text-foreground">
-                Assigned Doctors
-              </label>
+              <label className="text-xs font-semibold text-foreground">Doctores asignados</label>
               <p className="text-[11px] text-slate-400">
-                Leave unselected to allow all doctors. Select specific doctors to restrict.
+                Déjalo sin seleccionar para permitir todos los doctores. Elige doctores específicos para restringirlo.
               </p>
-              <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-md divide-y divide-slate-100">
+              <div className="max-h-40 divide-y divide-slate-100 overflow-y-auto rounded-md border border-slate-200">
                 {doctors.length === 0 ? (
                   <div className="px-3 py-4 text-center text-xs text-slate-400">
-                    No doctors found in this clinic.
+                    No se encontraron doctores en esta clínica.
                   </div>
                 ) : (
-                  doctors.map((doc) => (
+                  doctors.map((doctor) => (
                     <label
-                      key={doc.id}
-                      className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-slate-50 transition-all"
+                      key={doctor.id}
+                      className="flex cursor-pointer items-center gap-3 px-3 py-2.5 transition-all hover:bg-slate-50"
                     >
                       <Checkbox
-                        checked={form.doctor_ids.includes(doc.id)}
-                        onCheckedChange={() => toggleDoctor(doc.id)}
+                        checked={form.doctor_ids.includes(doctor.id)}
+                        onCheckedChange={() => toggleDoctor(doctor.id)}
                         className="rounded-[4px]"
                       />
-                      <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex min-w-0 items-center gap-2">
                         <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0"
+                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
                           style={{ backgroundColor: "#008BB0" }}
                         >
-                          {doc.first_name[0]}{doc.last_name[0]}
+                          {doctor.first_name[0]}
+                          {doctor.last_name[0]}
                         </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-xs font-medium text-foreground truncate">
-                            {doc.first_name} {doc.last_name}
+                        <div className="flex min-w-0 flex-col">
+                          <span className="truncate text-xs font-medium text-foreground">
+                            {doctor.first_name} {doctor.last_name}
                           </span>
-                          {doc.specialty && (
-                            <span className="text-[10px] text-slate-400 truncate">
-                              {doc.specialty}
-                            </span>
+                          {doctor.specialty && (
+                            <span className="truncate text-[10px] text-slate-400">{doctor.specialty}</span>
                           )}
                         </div>
                       </div>
@@ -521,8 +474,8 @@ export function ServicesManagementView() {
                 )}
               </div>
               {form.doctor_ids.length > 0 && (
-                <p className="text-[11px] text-[#008BB0] font-medium">
-                  {form.doctor_ids.length} doctor{form.doctor_ids.length !== 1 ? "s" : ""} selected
+                <p className="text-[11px] font-medium text-[#008BB0]">
+                  {form.doctor_ids.length} doctor{form.doctor_ids.length !== 1 ? "es" : ""} seleccionado{form.doctor_ids.length !== 1 ? "s" : ""}
                 </p>
               )}
             </div>
@@ -530,50 +483,51 @@ export function ServicesManagementView() {
 
           <DialogFooter className="mt-4">
             <button
+              type="button"
               onClick={() => setDialogOpen(false)}
               disabled={submitting}
-              className="px-4 py-2 rounded-md bg-white text-slate-600 text-xs font-semibold border border-slate-200 hover:bg-slate-50 transition-all"
+              className="rounded-md border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-50"
             >
-              Cancel
+              Cancelar
             </button>
             <button
+              type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="flex items-center gap-2 px-5 py-2 rounded-md bg-[#008BB0] text-white text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-60"
+              className="flex items-center gap-2 rounded-md bg-[#008BB0] px-5 py-2 text-xs font-semibold text-white transition-all hover:opacity-90 disabled:opacity-60"
             >
               {submitting && <Loader2 size={13} className="animate-spin" />}
-              {editingService ? "Save Changes" : "Create Service"}
+              {editingService ? "Guardar cambios" : "Crear servicio"}
             </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Confirmation Dialog ───────────────────────────────────────── */}
       <Dialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
-        <DialogContent className="bg-white rounded-lg shadow-md border border-slate-200 sm:max-w-sm">
+        <DialogContent className="border border-slate-200 bg-white shadow-md sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold text-foreground">
-              Delete Service
-            </DialogTitle>
+            <DialogTitle className="text-base font-bold text-foreground">Eliminar servicio</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-slate-600">
-            Are you sure you want to delete <strong>&quot;{deletingName}&quot;</strong>? This action will deactivate the service.
+            ¿Seguro que deseas eliminar <strong>&quot;{deletingName}&quot;</strong>? Esta acción desactivará el servicio.
           </p>
           <DialogFooter className="mt-4">
             <button
+              type="button"
               onClick={() => setDeletingId(null)}
               disabled={deleting}
-              className="px-4 py-2 rounded-md bg-white text-slate-600 text-xs font-semibold border border-slate-200 hover:bg-slate-50 transition-all"
+              className="rounded-md border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-50"
             >
-              Cancel
+              Cancelar
             </button>
             <button
+              type="button"
               onClick={handleDelete}
               disabled={deleting}
-              className="flex items-center gap-2 px-5 py-2 rounded-md bg-red-600 text-white text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-60"
+              className="flex items-center gap-2 rounded-md bg-red-600 px-5 py-2 text-xs font-semibold text-white transition-all hover:opacity-90 disabled:opacity-60"
             >
               {deleting && <Loader2 size={13} className="animate-spin" />}
-              Delete
+              Eliminar
             </button>
           </DialogFooter>
         </DialogContent>

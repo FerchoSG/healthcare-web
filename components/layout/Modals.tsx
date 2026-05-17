@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog"
 import {
   Sheet,
@@ -16,83 +16,269 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { PATIENTS } from "@/lib/store"
+import { emitDataChanged } from "@/lib/data-events"
+import { createAppointment } from "@/services/appointments.service"
+import { fetchDoctors } from "@/services/clinic-services.service"
+import { createPatient, fetchPatients } from "@/services/patients.service"
+import { Gender } from "@/types/api"
+import type { DoctorSummary, Patient } from "@/types/api"
 
-// ─── New Appointment Dialog ────────────────────────────────────────────────
 interface NewAppointmentDialogProps {
   open: boolean
   onClose: () => void
   preselectedSlot?: { date?: string; time?: string }
 }
 
-export function NewAppointmentDialog({ open, onClose, preselectedSlot }: NewAppointmentDialogProps) {
+const EMPTY_PATIENT_FORM = {
+  firstName: "",
+  lastName: "",
+  identification: "",
+  whatsapp: "",
+  birthDate: "",
+  gender: Gender.F,
+}
+
+function patientName(patient: Patient) {
+  return `${patient.first_name} ${patient.last_name}`
+}
+
+function patientAge(patient: Patient) {
+  const birth = new Date(patient.birth_date)
+  const today = new Date()
+  let age = today.getFullYear() - birth.getFullYear()
+  const monthDiff = today.getMonth() - birth.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--
+  return age
+}
+
+function patientInitials(patient: Patient) {
+  return `${patient.first_name[0] ?? ""}${patient.last_name[0] ?? ""}`.toUpperCase()
+}
+
+function avatarColor(label: string) {
+  const colors = ["#008BB0", "#4ECDC4", "#45B7D1", "#96CEB4", "#F59E0B", "#8B5CF6"]
+  let hash = 0
+  for (let i = 0; i < label.length; i++) hash = label.charCodeAt(i) + ((hash << 5) - hash)
+  return colors[Math.abs(hash) % colors.length]
+}
+
+function toIsoDateTime(date: string, time: string) {
+  return new Date(`${date}T${time}:00`).toISOString()
+}
+
+function plusMinutes(iso: string, minutes: number) {
+  return new Date(new Date(iso).getTime() + minutes * 60 * 1000).toISOString()
+}
+
+export function NewAppointmentDialog({
+  open,
+  onClose,
+  preselectedSlot,
+}: NewAppointmentDialogProps) {
+  const [patients, setPatients] = useState<Patient[]>([])
+  const [doctors, setDoctors] = useState<DoctorSummary[]>([])
   const [patientSearch, setPatientSearch] = useState("")
-  const [selectedPatient, setSelectedPatient] = useState("")
-  const [doctor, setDoctor] = useState("Dr. Carlos")
-  const [date, setDate] = useState(preselectedSlot?.date || "2026-03-12")
+  const [selectedPatientId, setSelectedPatientId] = useState("")
+  const [doctorId, setDoctorId] = useState("")
+  const [date, setDate] = useState(preselectedSlot?.date || new Date().toLocaleDateString("en-CA"))
   const [time, setTime] = useState(preselectedSlot?.time || "09:00")
   const [reason, setReason] = useState("")
   const [showCombo, setShowCombo] = useState(false)
+  const [showNewPatientForm, setShowNewPatientForm] = useState(false)
+  const [patientForm, setPatientForm] = useState(EMPTY_PATIENT_FORM)
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [creatingPatient, setCreatingPatient] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const filtered = PATIENTS.filter((p) =>
-    p.name.toLowerCase().includes(patientSearch.toLowerCase())
-  )
-
-  const handleSave = () => {
-    onClose()
+  const resetForm = (nextDoctors: DoctorSummary[] = []) => {
+    setPatients((prev) => prev)
     setPatientSearch("")
-    setSelectedPatient("")
+    setSelectedPatientId("")
     setReason("")
+    setShowCombo(false)
+    setShowNewPatientForm(false)
+    setPatientForm(EMPTY_PATIENT_FORM)
+    setError(null)
+    setDate(preselectedSlot?.date || new Date().toLocaleDateString("en-CA"))
+    setTime(preselectedSlot?.time || "09:00")
+    setDoctorId(nextDoctors[0]?.id || "")
+  }
+
+  useEffect(() => {
+    if (!open) return
+
+    let cancelled = false
+    setLoading(true)
+    resetForm()
+
+    Promise.all([fetchPatients({ page: 1, limit: 100 }), fetchDoctors()])
+      .then(([patientsRes, doctorsRes]) => {
+        if (cancelled) return
+        setPatients(patientsRes.data)
+        setDoctors(doctorsRes)
+        resetForm(doctorsRes)
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "No se pudo cargar la agenda")
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [open, preselectedSlot])
+
+  const filteredPatients = useMemo(() => {
+    const term = patientSearch.trim().toLowerCase()
+    if (!term) return patients.slice(0, 8)
+    return patients.filter((patient) =>
+      patientName(patient).toLowerCase().includes(term) ||
+      patient.identification.toLowerCase().includes(term),
+    )
+  }, [patientSearch, patients])
+
+  const selectedPatient = patients.find((patient) => patient.id === selectedPatientId) ?? null
+
+  const handleSave = async () => {
+    const missing: string[] = []
+    if (!selectedPatientId) missing.push("paciente")
+    if (!doctorId) missing.push("doctor")
+    if (!date) missing.push("fecha")
+    if (!time) missing.push("hora")
+
+    if (missing.length > 0) {
+      setError(`Falta ${missing.join(", ")}`)
+      return
+    }
+
+    const startTime = toIsoDateTime(date, time)
+    const endTime = plusMinutes(startTime, 30)
+
+    try {
+      setSaving(true)
+      setError(null)
+      await createAppointment({
+        patient_id: selectedPatientId,
+        doctor_id: doctorId,
+        start_time: startTime,
+        end_time: endTime,
+        reason: reason || undefined,
+      })
+      emitDataChanged({ entity: "appointment", action: "created" })
+      resetForm(doctors)
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo crear la cita")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCreatePatientAndSelect = async () => {
+    if (!patientForm.firstName || !patientForm.lastName || !patientForm.identification || !patientForm.birthDate) {
+      setError("Completa nombre, apellido, identificación y fecha de nacimiento del paciente")
+      return
+    }
+
+    try {
+      setCreatingPatient(true)
+      setError(null)
+      const created = await createPatient({
+        first_name: patientForm.firstName,
+        last_name: patientForm.lastName,
+        identification: patientForm.identification,
+        birth_date: patientForm.birthDate,
+        gender: patientForm.gender,
+        whatsapp_phone: patientForm.whatsapp || undefined,
+      })
+      emitDataChanged({ entity: "patient", action: "created" })
+      setPatients((prev) => [created, ...prev])
+      setSelectedPatientId(created.id)
+      setPatientSearch("")
+      setShowCombo(false)
+      setShowNewPatientForm(false)
+      setPatientForm(EMPTY_PATIENT_FORM)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo crear el paciente")
+    } finally {
+      setCreatingPatient(false)
+    }
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <DialogContent className="rounded-lg w-[95vw] max-w-md p-0 overflow-hidden gap-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
-          <DialogTitle className="text-base font-bold">New Appointment</DialogTitle>
-          <DialogDescription className="sr-only">Schedule a new appointment by selecting a patient, doctor, date, time, and reason.</DialogDescription>
+          <DialogTitle className="text-base font-bold">Nueva cita</DialogTitle>
+          <DialogDescription className="sr-only">
+            Agenda una nueva cita con datos reales de pacientes y doctores.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="px-6 py-5 flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
-          {/* Patient Search (Combobox) */}
+          {error && (
+            <p className="text-xs text-red-600">{error}</p>
+          )}
+
           <div className="flex flex-col gap-1.5 relative">
-            <label className="text-xs font-semibold text-foreground">Patient</label>
+            <label className="text-xs font-semibold text-foreground">Paciente</label>
             <input
               type="text"
-              placeholder="Search patient..."
-              value={selectedPatient || patientSearch}
+              placeholder={loading ? "Cargando pacientes..." : "Buscar por nombre o cédula"}
+              value={selectedPatient ? patientName(selectedPatient) : patientSearch}
               onChange={(e) => {
                 setPatientSearch(e.target.value)
-                setSelectedPatient("")
-                setShowCombo(true)
+                setSelectedPatientId("")
+                setShowCombo(Boolean(e.target.value.trim()))
+                if (showNewPatientForm) setShowNewPatientForm(false)
               }}
-              onFocus={() => setShowCombo(true)}
               className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
             />
-            {showCombo && patientSearch && !selectedPatient && (
-              <div className="absolute top-full mt-1 left-0 right-0 z-50 bg-white border border-border rounded-md overflow-hidden shadow-xl">
-                {filtered.length === 0 ? (
-                  <p className="text-xs text-muted-foreground px-4 py-3">No patients found</p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[11px] text-muted-foreground">
+                {selectedPatient ? `Seleccionado: ${patientName(selectedPatient)}` : "Puedes usar un paciente existente o crear uno nuevo."}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNewPatientForm((current) => !current)
+                  setShowCombo(false)
+                }}
+                className="text-[11px] font-semibold text-foreground underline underline-offset-2"
+              >
+                {showNewPatientForm ? "Ocultar formulario" : "Nuevo paciente"}
+              </button>
+            </div>
+            {showCombo && !selectedPatient && (
+              <div className="absolute top-full mt-1 left-0 right-0 z-50 bg-white border border-border rounded-md overflow-hidden shadow-xl max-h-64 overflow-y-auto">
+                {filteredPatients.length === 0 ? (
+                  <p className="text-xs text-muted-foreground px-4 py-3">No se encontraron pacientes</p>
                 ) : (
-                  filtered.map((p) => (
+                  filteredPatients.map((patient) => (
                     <button
-                      key={p.id}
+                      key={patient.id}
+                      type="button"
                       className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-muted transition-all"
                       onMouseDown={() => {
-                        setSelectedPatient(p.name)
+                        setSelectedPatientId(patient.id)
                         setPatientSearch("")
                         setShowCombo(false)
                       }}
                     >
                       <div
                         className="w-7 h-7 rounded-md flex items-center justify-center text-white text-[10px] font-bold"
-                        style={{ backgroundColor: p.avatarColor }}
+                        style={{ backgroundColor: avatarColor(patientName(patient)) }}
                       >
-                        {p.avatarInitials}
+                        {patientInitials(patient)}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-foreground">{p.name}</p>
-                        <p className="text-[10px] text-muted-foreground">Age {p.age}</p>
+                        <p className="text-sm font-medium text-foreground">{patientName(patient)}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {patient.identification} · {patientAge(patient)} años
+                        </p>
                       </div>
                     </button>
                   ))
@@ -101,24 +287,88 @@ export function NewAppointmentDialog({ open, onClose, preselectedSlot }: NewAppo
             )}
           </div>
 
-          {/* Doctor */}
+          {showNewPatientForm && (
+            <div className="rounded-lg border border-border bg-muted/40 p-4 flex flex-col gap-3">
+              <p className="text-xs font-bold text-foreground">Crear paciente para esta cita</p>
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  placeholder="Nombre"
+                  value={patientForm.firstName}
+                  onChange={(e) => setPatientForm((prev) => ({ ...prev, firstName: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-md bg-white text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                />
+                <input
+                  type="text"
+                  placeholder="Apellido"
+                  value={patientForm.lastName}
+                  onChange={(e) => setPatientForm((prev) => ({ ...prev, lastName: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-md bg-white text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  placeholder="Identificación"
+                  value={patientForm.identification}
+                  onChange={(e) => setPatientForm((prev) => ({ ...prev, identification: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-md bg-white text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                />
+                <input
+                  type="tel"
+                  placeholder="WhatsApp"
+                  value={patientForm.whatsapp}
+                  onChange={(e) => setPatientForm((prev) => ({ ...prev, whatsapp: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-md bg-white text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="date"
+                  value={patientForm.birthDate}
+                  onChange={(e) => setPatientForm((prev) => ({ ...prev, birthDate: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-md bg-white text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                />
+                <select
+                  value={patientForm.gender}
+                  onChange={(e) => setPatientForm((prev) => ({ ...prev, gender: e.target.value as Gender }))}
+                  className="w-full px-3 py-2 rounded-md bg-white text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                >
+                  <option value="F">Femenino</option>
+                  <option value="M">Masculino</option>
+                  <option value="OTHER">Otro</option>
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={handleCreatePatientAndSelect}
+                disabled={creatingPatient}
+                className="w-full py-2.5 rounded-md bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-50"
+              >
+                {creatingPatient ? "Creando paciente..." : "Crear y seleccionar paciente"}
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-foreground">Doctor</label>
             <select
-              value={doctor}
-              onChange={(e) => setDoctor(e.target.value)}
+              value={doctorId}
+              onChange={(e) => setDoctorId(e.target.value)}
               className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
             >
-              <option>Dr. Carlos</option>
-              <option>Dr. Martinez</option>
-              <option>Dr. Rodriguez</option>
+              <option value="">Selecciona un doctor</option>
+              {doctors.map((doctor) => (
+                <option key={doctor.id} value={doctor.id}>
+                  Dr. {doctor.first_name} {doctor.last_name}
+                </option>
+              ))}
             </select>
           </div>
 
-          {/* Date + Time */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">Date</label>
+              <label className="text-xs font-semibold text-foreground">Fecha</label>
               <input
                 type="date"
                 value={date}
@@ -127,26 +377,25 @@ export function NewAppointmentDialog({ open, onClose, preselectedSlot }: NewAppo
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">Time</label>
+              <label className="text-xs font-semibold text-foreground">Hora</label>
               <select
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
               >
-                {["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","12:00","14:00","14:30","15:00","15:30","16:00","16:30","17:00"].map((t) => (
-                  <option key={t}>{t}</option>
+                {["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","12:00","14:00","14:30","15:00","15:30","16:00","16:30","17:00"].map((slot) => (
+                  <option key={slot} value={slot}>{slot}</option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Reason */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-foreground">Reason / Chief Complaint</label>
+            <label className="text-xs font-semibold text-foreground">Motivo</label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Describe the reason for the appointment..."
+              placeholder="Describe el motivo de la cita"
               rows={3}
               className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all resize-none"
             />
@@ -155,16 +404,22 @@ export function NewAppointmentDialog({ open, onClose, preselectedSlot }: NewAppo
 
         <DialogFooter className="px-6 pb-6 pt-0">
           <button
-            onClick={onClose}
+            type="button"
+            onClick={() => {
+              resetForm(doctors)
+              onClose()
+            }}
             className="flex-1 py-2.5 rounded-md bg-muted shadow-sm text-muted-foreground text-sm font-semibold hover:text-foreground transition-all"
           >
-            Cancel
+            Cancelar
           </button>
           <button
+            type="button"
             onClick={handleSave}
-            className="flex-1 py-2.5 rounded-md bg-foreground shadow-sm text-background text-sm font-semibold hover:opacity-90 transition-all"
+            disabled={saving || loading}
+            className="flex-1 py-2.5 rounded-md bg-foreground shadow-sm text-background text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
           >
-            Save Appointment
+            {saving ? "Guardando..." : "Guardar cita"}
           </button>
         </DialogFooter>
       </DialogContent>
@@ -172,7 +427,6 @@ export function NewAppointmentDialog({ open, onClose, preselectedSlot }: NewAppo
   )
 }
 
-// ─── Walk-in Sheet ─────────────────────────────────────────────────────────
 interface WalkInSheetProps {
   open: boolean
   onClose: () => void
@@ -184,30 +438,72 @@ export function WalkInSheet({ open, onClose }: WalkInSheetProps) {
     lastName: "",
     identification: "",
     whatsapp: "",
-    reason: "",
-    triage: "Low",
+    birthDate: "",
+    gender: Gender.F,
   })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    setForm((prev) => ({ ...prev, [k]: e.target.value }))
+  const set =
+    (key: keyof typeof form) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setForm((prev) => ({ ...prev, [key]: event.target.value }))
 
-  const handleSave = () => {
-    onClose()
-    setForm({ firstName: "", lastName: "", identification: "", whatsapp: "", reason: "", triage: "Low" })
+  const reset = () => {
+    setForm({
+      firstName: "",
+      lastName: "",
+      identification: "",
+      whatsapp: "",
+      birthDate: "",
+      gender: Gender.F,
+    })
+    setError(null)
+  }
+
+  const handleSave = async () => {
+    if (!form.firstName || !form.lastName || !form.identification || !form.birthDate) {
+      setError("Completa nombre, cédula y fecha de nacimiento")
+      return
+    }
+
+    try {
+      setSaving(true)
+      setError(null)
+      await createPatient({
+        first_name: form.firstName,
+        last_name: form.lastName,
+        identification: form.identification,
+        birth_date: form.birthDate,
+        gender: form.gender,
+        whatsapp_phone: form.whatsapp || undefined,
+      })
+      emitDataChanged({ entity: "patient", action: "created" })
+      reset()
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo registrar el paciente")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+    <Sheet open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <SheetContent side="right" className="w-full sm:w-[420px] sm:rounded-l-3xl p-0 flex flex-col">
         <SheetHeader className="px-6 pt-6 pb-4 border-b border-border">
-          <SheetTitle className="text-base font-bold">Quick Register — Walk-in Patient</SheetTitle>
-          <SheetDescription className="text-xs text-muted-foreground">Fill in the patient's basic information to register them immediately.</SheetDescription>
+          <SheetTitle className="text-base font-bold">Registro rápido</SheetTitle>
+          <SheetDescription className="text-xs text-muted-foreground">
+            Crea un paciente real en la clínica actual.
+          </SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4">
+          {error && <p className="text-xs text-red-600">{error}</p>}
+
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">First Name</label>
+              <label className="text-xs font-semibold text-foreground">Nombre</label>
               <input
                 type="text"
                 value={form.firstName}
@@ -217,19 +513,19 @@ export function WalkInSheet({ open, onClose }: WalkInSheetProps) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">Last Name</label>
+              <label className="text-xs font-semibold text-foreground">Apellido</label>
               <input
                 type="text"
                 value={form.lastName}
                 onChange={set("lastName")}
-                placeholder="González"
+                placeholder="Gonzalez"
                 className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
               />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-foreground">Identification (Cédula)</label>
+            <label className="text-xs font-semibold text-foreground">Cédula</label>
             <input
               type="text"
               value={form.identification}
@@ -239,8 +535,32 @@ export function WalkInSheet({ open, onClose }: WalkInSheetProps) {
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-foreground">Nacimiento</label>
+              <input
+                type="date"
+                value={form.birthDate}
+                onChange={set("birthDate")}
+                className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-foreground">Genero</label>
+              <select
+                value={form.gender}
+                onChange={set("gender")}
+                className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+              >
+                <option value="F">Femenino</option>
+                <option value="M">Masculino</option>
+                <option value="OTHER">Otro</option>
+              </select>
+            </div>
+          </div>
+
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-foreground">WhatsApp Phone</label>
+            <label className="text-xs font-semibold text-foreground">WhatsApp</label>
             <input
               type="tel"
               value={form.whatsapp}
@@ -249,140 +569,29 @@ export function WalkInSheet({ open, onClose }: WalkInSheetProps) {
               className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
             />
           </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-foreground">Triage / Priority</label>
-            <select
-              value={form.triage}
-              onChange={set("triage")}
-              className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
-            >
-              <option value="Low">Low — Routine</option>
-              <option value="Medium">Medium — Urgent</option>
-              <option value="High">High — Emergency</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-foreground">Immediate Reason</label>
-            <textarea
-              value={form.reason}
-              onChange={set("reason")}
-              placeholder="Describe the reason for the walk-in visit..."
-              rows={4}
-              className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all resize-none"
-            />
-          </div>
         </div>
 
         <div className="px-6 pb-6 pt-3 flex gap-3 border-t border-border">
           <button
-            onClick={onClose}
+            type="button"
+            onClick={() => {
+              reset()
+              onClose()
+            }}
             className="flex-1 py-2.5 rounded-md bg-muted shadow-sm text-muted-foreground text-sm font-semibold hover:text-foreground transition-all"
           >
-            Cancel
+            Cancelar
           </button>
           <button
+            type="button"
             onClick={handleSave}
-            className="flex-1 py-2.5 rounded-md bg-foreground shadow-sm text-background text-sm font-semibold hover:opacity-90 transition-all"
+            disabled={saving}
+            className="flex-1 py-2.5 rounded-md bg-foreground shadow-sm text-background text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
           >
-            Register Patient
+            {saving ? "Guardando..." : "Registrar paciente"}
           </button>
         </div>
       </SheetContent>
     </Sheet>
-  )
-}
-
-// ─── New Invoice Dialog ────────────────────────────────────────────────────
-interface NewInvoiceDialogProps {
-  open: boolean
-  onClose: () => void
-}
-
-export function NewInvoiceDialog({ open, onClose }: NewInvoiceDialogProps) {
-  const [patient, setPatient] = useState("")
-  const [service, setService] = useState("")
-  const [amount, setAmount] = useState("")
-  const [date, setDate] = useState("2026-03-12")
-
-  const handleSave = () => {
-    onClose()
-    setPatient("")
-    setService("")
-    setAmount("")
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="rounded-lg w-[95vw] max-w-md p-0 overflow-hidden gap-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
-          <DialogTitle className="text-base font-bold">Create Invoice</DialogTitle>
-          <DialogDescription className="sr-only">Create a new invoice by selecting a patient, service, amount, and date.</DialogDescription>
-        </DialogHeader>
-
-        <div className="px-6 py-5 flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-foreground">Patient</label>
-            <select
-              value={patient}
-              onChange={(e) => setPatient(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
-            >
-              <option value="">Select patient...</option>
-              {PATIENTS.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-foreground">Service / Procedure</label>
-            <input
-              type="text"
-              value={service}
-              onChange={(e) => setService(e.target.value)}
-              placeholder="e.g. Root Canal Treatment"
-              className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">Amount ($)</label>
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">Date</label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
-              />
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter className="px-6 pb-6 pt-0">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2.5 rounded-md bg-muted shadow-sm text-muted-foreground text-sm font-semibold hover:text-foreground transition-all"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="flex-1 py-2.5 rounded-md bg-foreground shadow-sm text-background text-sm font-semibold hover:opacity-90 transition-all"
-          >
-            Create Invoice
-          </button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }

@@ -1,0 +1,9 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/book/[clinicSlug]/page": "/book/[clinicSlug]",
+  "/book/page": "/book",
+  "/page": "/",
+  "/portal/[clinicSlug]/page": "/portal/[clinicSlug]",
+  "/portal/page": "/portal"
+}

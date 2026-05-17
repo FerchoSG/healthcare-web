@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { CITABOX_DATA_CHANGED_EVENT } from "@/lib/data-events"
+import { formatClinicTime, formatClinicDateFromKey, getClinicTodayKey } from "@/lib/clinic-time"
 import { AppointmentStatus, type Appointment } from "@/types/api"
 import { fetchTodayAppointments, updateAppointmentStatus } from "@/services/appointments.service"
 import { useToast } from "@/hooks/use-toast"
@@ -18,11 +20,11 @@ function getAvatarColor(name: string) {
 }
 
 function formatTime(isoString: string) {
-  return new Date(isoString).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })
+  return formatClinicTime(isoString)
 }
 
 interface DoctorDashboardProps {
-  onOpenEMR: (patientId: string) => void
+  onOpenEMR: (patientId: string, options?: { consultationActive?: boolean; appointmentId?: string }) => void
   doctorId?: string
   doctorName?: string
 }
@@ -43,8 +45,10 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
       // Filter to this doctor's appointments if doctorId is known
       const mine = doctorId ? data.filter((a) => a.doctor_id === doctorId) : data
       setAppointments(mine)
+      const inConsultation = mine.find((appointment) => appointment.status === AppointmentStatus.IN_CONSULTATION)
+      setActiveConsultId(inConsultation?.id ?? null)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load appointments")
+      setError(err instanceof Error ? err.message : "No se pudieron cargar las citas.")
     } finally {
       setLoading(false)
     }
@@ -52,18 +56,32 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
 
   useEffect(() => { loadAppointments() }, [loadAppointments])
 
+  useEffect(() => {
+    const handler = () => {
+      void loadAppointments()
+    }
+    window.addEventListener(CITABOX_DATA_CHANGED_EVENT, handler)
+    return () => window.removeEventListener(CITABOX_DATA_CHANGED_EVENT, handler)
+  }, [loadAppointments])
+
   const handleStartConsultation = async (apt: Appointment) => {
-    setActiveConsultId(apt.id)
     if (apt.status !== AppointmentStatus.IN_CONSULTATION) {
       setMutatingId(apt.id)
       try {
         const updated = await updateAppointmentStatus(apt.id, AppointmentStatus.IN_CONSULTATION)
-        setAppointments((a) => a.map((x) => (x.id === apt.id ? updated : x)))
+        setActiveConsultId(apt.id)
+        setAppointments((a) => a.map((x) => (x.id === apt.id ? { ...x, ...updated } : x)))
+        if (!updated.patient || !updated.doctor) {
+          await loadAppointments()
+        }
       } catch (err: unknown) {
-        toast({ variant: "destructive", title: "Error", description: err instanceof Error ? err.message : "Failed" })
+        setActiveConsultId((current) => (current === apt.id ? null : current))
+        toast({ variant: "destructive", title: "Error", description: err instanceof Error ? err.message : "No se pudo iniciar la consulta" })
       } finally {
         setMutatingId(null)
       }
+    } else {
+      setActiveConsultId(apt.id)
     }
   }
 
@@ -72,25 +90,33 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
     setMutatingId(apt.id)
     try {
       const updated = await updateAppointmentStatus(apt.id, AppointmentStatus.COMPLETED)
-      setAppointments((a) => a.map((x) => (x.id === apt.id ? updated : x)))
+      setAppointments((a) => a.map((x) => (x.id === apt.id ? { ...x, ...updated } : x)))
+      if (!updated.patient || !updated.doctor) {
+        await loadAppointments()
+      }
     } catch (err: unknown) {
-      toast({ variant: "destructive", title: "Error", description: err instanceof Error ? err.message : "Failed" })
+      toast({ variant: "destructive", title: "Error", description: err instanceof Error ? err.message : "No se pudo cerrar la consulta" })
     } finally {
       setMutatingId(null)
     }
   }
 
   const displayName = doctorName ?? "Doctor"
-  const todayStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
+  const todayStr = formatClinicDateFromKey(getClinicTodayKey(), {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  })
+  const activeCount = appointments.filter((appointment) => appointment.status === AppointmentStatus.IN_CONSULTATION).length
 
   const statusBadge = (status: AppointmentStatus, isActive: boolean) => {
-    if (isActive) return { cls: "text-white", style: { backgroundColor: "var(--neon-green)" }, label: "Active" }
+    if (isActive) return { cls: "text-white", style: { backgroundColor: "var(--neon-green)" }, label: "Activa" }
     switch (status) {
-      case AppointmentStatus.WAITING: return { cls: "text-amber-700 bg-amber-50 dark:bg-amber-950 dark:text-amber-300", style: {}, label: "Waiting" }
-      case AppointmentStatus.COMPLETED: return { cls: "text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-300", style: {}, label: "Completed" }
-      case AppointmentStatus.IN_CONSULTATION: return { cls: "text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-300", style: {}, label: "In Consult" }
-      case AppointmentStatus.CANCELLED: return { cls: "text-red-700 bg-red-50 dark:bg-red-950 dark:text-red-300", style: {}, label: "Cancelled" }
-      default: return { cls: "text-muted-foreground bg-muted", style: {}, label: "Pending" }
+      case AppointmentStatus.WAITING: return { cls: "text-amber-700 bg-amber-50 dark:bg-amber-950 dark:text-amber-300", style: {}, label: "En espera" }
+      case AppointmentStatus.COMPLETED: return { cls: "text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-300", style: {}, label: "Completada" }
+      case AppointmentStatus.IN_CONSULTATION: return { cls: "text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-300", style: {}, label: "En consulta" }
+      case AppointmentStatus.CANCELLED: return { cls: "text-red-700 bg-red-50 dark:bg-red-950 dark:text-red-300", style: {}, label: "Cancelada" }
+      default: return { cls: "text-muted-foreground bg-muted", style: {}, label: "Pendiente" }
     }
   }
 
@@ -101,13 +127,13 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-1">{todayStr}</p>
-            <h2 className="text-2xl font-extrabold text-foreground text-balance">Good morning, {displayName}.</h2>
+            <h2 className="text-2xl font-extrabold text-foreground text-balance">Buen día, {displayName}.</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              You have{" "}
+              Tienes{" "}
               <span className="font-semibold" style={{ color: "var(--neon-green)" }}>
-                {appointments.length} appointments
+                {appointments.length} citas
               </span>{" "}
-              scheduled today.
+              programadas para hoy.
             </p>
           </div>
           <div
@@ -122,9 +148,9 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
       {/* Stats strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: "Today's Patients", value: String(appointments.length), icon: <User size={14} /> },
-          { label: "In Progress", value: activeConsultId ? "1" : "0", icon: <Clock size={14} /> },
-          { label: "Completed", value: String(appointments.filter((a) => a.status === AppointmentStatus.COMPLETED).length), icon: <FileText size={14} /> },
+          { label: "Pacientes de hoy", value: String(appointments.length), icon: <User size={14} /> },
+          { label: "En progreso", value: String(activeCount), icon: <Clock size={14} /> },
+          { label: "Completadas", value: String(appointments.filter((a) => a.status === AppointmentStatus.COMPLETED).length), icon: <FileText size={14} /> },
         ].map((stat) => (
           <div key={stat.label} className="bg-white dark:bg-card rounded-lg shadow-md p-4 border border-border flex items-center gap-3">
             <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center text-muted-foreground">
@@ -142,7 +168,7 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
       {loading && (
         <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
           <Loader2 size={18} className="animate-spin" />
-          <span className="text-sm">Loading schedule…</span>
+          <span className="text-sm">Cargando agenda...</span>
         </div>
       )}
 
@@ -150,7 +176,7 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
         <div className="flex items-center gap-2 py-8 justify-center text-red-600">
           <AlertCircle size={16} />
           <span className="text-sm">{error}</span>
-          <button onClick={loadAppointments} className="text-sm font-semibold underline ml-2">Retry</button>
+          <button onClick={loadAppointments} className="text-sm font-semibold underline ml-2">Reintentar</button>
         </div>
       )}
 
@@ -158,13 +184,15 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
       {!loading && !error && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {appointments.length === 0 && (
-            <p className="text-sm text-muted-foreground col-span-2 text-center py-8">No appointments for today</p>
+            <p className="text-sm text-muted-foreground col-span-2 text-center py-8">No hay citas para hoy.</p>
           )}
           {appointments.map((apt) => {
-            const name = `${apt.patient.first_name} ${apt.patient.last_name}`
-            const initials = getInitials(apt.patient.first_name, apt.patient.last_name)
+            const patientFirstName = apt.patient?.first_name ?? "Paciente"
+            const patientLastName = apt.patient?.last_name ?? ""
+            const name = `${patientFirstName} ${patientLastName}`.trim()
+            const initials = getInitials(patientFirstName, patientLastName || "P")
             const color = getAvatarColor(name)
-            const isActive = activeConsultId === apt.id
+            const isActive = activeConsultId === apt.id || apt.status === AppointmentStatus.IN_CONSULTATION
             const isMutating = mutatingId === apt.id
             const badge = statusBadge(apt.status, isActive)
 
@@ -185,7 +213,7 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-foreground">{name}</p>
-                    <p className="text-xs text-muted-foreground">{apt.patient.identification ?? ""}</p>
+                    <p className="text-xs text-muted-foreground">{apt.patient?.identification ?? ""}</p>
                   </div>
                   <span
                     className={`text-[10px] font-semibold px-2.5 py-1 rounded-md ${badge.cls}`}
@@ -203,7 +231,7 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
                   </span>
                   <span className="flex items-center gap-1">
                     <FileText size={11} />
-                    {apt.reason ?? apt.service?.name ?? "Appointment"}
+                        {apt.reason ?? apt.service?.name ?? "Cita"}
                   </span>
                 </div>
 
@@ -212,11 +240,11 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
                   {isActive ? (
                     <>
                       <button
-                        onClick={() => onOpenEMR(apt.patient_id)}
+                        onClick={() => onOpenEMR(apt.patient_id, { consultationActive: true, appointmentId: apt.id })}
                         className="flex-1 py-2.5 rounded-md text-xs font-semibold border-2 transition-all hover:bg-muted"
                         style={{ borderColor: "var(--neon-green)", color: "var(--neon-green)" }}
                       >
-                        Open EMR
+                        Abrir expediente
                       </button>
                       <button
                         onClick={() => handleEndConsultation(apt)}
@@ -224,7 +252,7 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
                         className="flex-1 py-2.5 rounded-md bg-red-500 text-white text-xs font-semibold hover:bg-red-600 transition-all disabled:opacity-60 flex items-center justify-center gap-1"
                       >
                         {isMutating && <Loader2 size={12} className="animate-spin" />}
-                        End Consultation
+                        Finalizar consulta
                       </button>
                     </>
                   ) : (
@@ -234,7 +262,7 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
                       className="w-full py-2.5 rounded-md bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-60 flex items-center justify-center gap-1"
                     >
                       {isMutating && <Loader2 size={12} className="animate-spin" />}
-                      Start Consultation
+                      Iniciar consulta
                     </button>
                   )}
                 </div>

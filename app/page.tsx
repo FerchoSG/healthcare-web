@@ -7,12 +7,11 @@ import { fetchMe } from "@/services/appointments.service"
 import { AuthScreen } from "@/components/auth/AuthScreen"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { TopHeader } from "@/components/layout/TopHeader"
-import { NewAppointmentDialog, WalkInSheet, NewInvoiceDialog } from "@/components/layout/Modals"
+import { NewAppointmentDialog, WalkInSheet } from "@/components/layout/Modals"
 import { AdminDashboard } from "@/components/views/AdminDashboard"
 import { ReceptionistDashboard } from "@/components/views/ReceptionistDashboard"
 import { DoctorDashboard } from "@/components/views/DoctorDashboard"
 import { CalendarView } from "@/components/views/CalendarView"
-import { BillingView } from "@/components/views/BillingView"
 import { EMRView } from "@/components/views/EMRView"
 import { PatientsView } from "@/components/views/PatientsView"
 import { SettingsView } from "@/components/views/SettingsView"
@@ -27,7 +26,7 @@ export default function App() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [activeView, setActiveView] = useState<View>("dashboard")
-  const [emrPatientId, setEmrPatientId] = useState<string | null>(null)
+  const [emrState, setEmrState] = useState<{ patientId: string; consultationActive: boolean; appointmentId?: string | null } | null>(null)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
@@ -35,7 +34,6 @@ export default function App() {
   const [showNewAppointment, setShowNewAppointment] = useState(false)
   const [newAppointmentSlot, setNewAppointmentSlot] = useState<{ date?: string; time?: string } | undefined>()
   const [showWalkIn, setShowWalkIn] = useState(false)
-  const [showNewInvoice, setShowNewInvoice] = useState(false)
 
   // On mount: if we have a stored token, try to restore the session
   useEffect(() => {
@@ -70,14 +68,14 @@ export default function App() {
     setAuthUser(user)
     const role = AUTH_ROLE_TO_ROLE[user.role] ?? "admin"
     setActiveView(defaultViewPerRole[role])
-    setEmrPatientId(null)
+    setEmrState(null)
   }
 
   const handleLogout = () => {
     clearAuth()
     setAuthUser(null)
     setActiveView("dashboard")
-    setEmrPatientId(null)
+    setEmrState(null)
   }
 
   const handleClinicSwitch = async (clinicId: string) => {
@@ -87,7 +85,15 @@ export default function App() {
     setAuthUser(user)
     const role = AUTH_ROLE_TO_ROLE[user.role] ?? "admin"
     setActiveView(defaultViewPerRole[role])
-    setEmrPatientId(null)
+    setEmrState(null)
+  }
+
+  const openEmr = (patientId: string, options?: { consultationActive?: boolean; appointmentId?: string }) => {
+    setEmrState({
+      patientId,
+      consultationActive: options?.consultationActive ?? false,
+      appointmentId: options?.appointmentId ?? null,
+    })
   }
 
   const openNewAppointment = (slot?: { date?: string; time?: string }) => {
@@ -120,24 +126,22 @@ export default function App() {
           <ReceptionistDashboard
             onNewAppointment={() => openNewAppointment()}
             onWalkIn={() => setShowWalkIn(true)}
-            onOpenEMR={(id) => setEmrPatientId(id)}
+            onOpenEMR={(id) => openEmr(id)}
           />
         )
       case "schedule":
         return (
           <DoctorDashboard
-            onOpenEMR={(id) => setEmrPatientId(id)}
+            onOpenEMR={openEmr}
             doctorId={authUser.id}
             doctorName={authUser.name}
           />
         )
       case "calendar":
         return <CalendarView onNewAppointment={openNewAppointment} />
-      case "billing":
-        return <BillingView onNewInvoice={() => setShowNewInvoice(true)} />
       case "patients":
       case "medical-records":
-        return <PatientsView onOpenEMR={(id) => setEmrPatientId(id)} />
+        return <PatientsView onOpenEMR={(id) => openEmr(id)} />
       case "settings":
         return <SettingsView />
       default:
@@ -165,7 +169,6 @@ export default function App() {
           onLogout={handleLogout}
           onNewAppointment={() => openNewAppointment()}
           onNewPatient={() => setShowWalkIn(true)}
-          onNewInvoice={() => setShowNewInvoice(true)}
           onViewChange={setActiveView}
           onMenuClick={() => setMobileNavOpen(true)}
           onClinicSwitch={handleClinicSwitch}
@@ -176,8 +179,13 @@ export default function App() {
       </div>
 
       {/* EMR Modal */}
-      {emrPatientId && (
-        <EMRView patientId={emrPatientId} onClose={() => setEmrPatientId(null)} />
+      {emrState && (
+        <EMRView
+          patientId={emrState.patientId}
+          initialConsultationActive={emrState.consultationActive}
+          appointmentId={emrState.appointmentId ?? null}
+          onClose={() => setEmrState(null)}
+        />
       )}
 
       {/* Global Modals */}
@@ -187,7 +195,6 @@ export default function App() {
         preselectedSlot={newAppointmentSlot}
       />
       <WalkInSheet open={showWalkIn} onClose={() => setShowWalkIn(false)} />
-      <NewInvoiceDialog open={showNewInvoice} onClose={() => setShowNewInvoice(false)} />
     </div>
   )
 }

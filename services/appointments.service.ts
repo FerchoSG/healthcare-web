@@ -1,7 +1,9 @@
 import { api } from "@/lib/api-client";
+import { getClinicTodayKey } from "@/lib/clinic-time";
 import type {
   Appointment,
   AppointmentStatus,
+  CreateAppointmentPayload,
   MeResponse,
   TimeBlock,
   CreateTimeBlockPayload,
@@ -35,8 +37,14 @@ export function fetchAppointments(
 
 /** Fetch today's appointments. */
 export function fetchTodayAppointments(): Promise<Appointment[]> {
-  const today = new Date().toLocaleDateString("en-CA");
+  const today = getClinicTodayKey();
   return fetchAppointments(today, today);
+}
+
+export function createAppointment(
+  payload: CreateAppointmentPayload,
+): Promise<Appointment> {
+  return api.post<Appointment>("/appointments", payload);
 }
 
 /** Update an appointment's status. */

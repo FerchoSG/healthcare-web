@@ -1,0 +1,9 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/book/[clinicSlug]/page": "app/book/[clinicSlug]/page.js",
+  "/book/page": "app/book/page.js",
+  "/page": "app/page.js",
+  "/portal/[clinicSlug]/page": "app/portal/[clinicSlug]/page.js",
+  "/portal/page": "app/portal/page.js"
+}

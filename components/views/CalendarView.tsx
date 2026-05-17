@@ -2,6 +2,14 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { CITABOX_DATA_CHANGED_EVENT } from "@/lib/data-events"
+import {
+  CLINIC_TIME_ZONE,
+  formatClinicDateFromKey,
+  formatClinicDateKey,
+  getClinicTodayKey,
+  parseClinicDateKey,
+} from "@/lib/clinic-time"
 import {
   Dialog,
   DialogContent,
@@ -24,10 +32,9 @@ import { CalendarCell } from "@/components/calendar/CalendarCell"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const CLINIC_TZ = "America/Costa_Rica"
 const BUSINESS_START = 8
 const BUSINESS_END = 17
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
 
 const TIME_SLOTS: string[] = (() => {
   const s: string[] = []
@@ -41,31 +48,30 @@ const TIME_SLOTS: string[] = (() => {
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
 function getWeekStart(offset: number): Date {
-  const now = new Date()
-  const dow = now.getDay()
+  const now = parseClinicDateKey(getClinicTodayKey())
+  const dow = now.getUTCDay()
   const daysToMonday = dow === 0 ? -6 : 1 - dow
   const monday = new Date(now)
-  monday.setDate(now.getDate() + daysToMonday + offset * 7)
-  monday.setHours(0, 0, 0, 0)
+  monday.setUTCDate(now.getUTCDate() + daysToMonday + offset * 7)
   return monday
 }
 
 function getWeekDays(weekStart: Date): Date[] {
   return Array.from({ length: 6 }, (_, i) => {
     const d = new Date(weekStart)
-    d.setDate(weekStart.getDate() + i)
+    d.setUTCDate(weekStart.getUTCDate() + i)
     return d
   })
 }
 
 function toDateKey(d: Date): string {
-  return d.toLocaleDateString("en-CA")
+  return formatClinicDateKey(d)
 }
 
 function toClinicLocal(isoString: string): { dateKey: string; timeKey: string } {
   const d = new Date(isoString)
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: CLINIC_TZ,
+  const parts = new Intl.DateTimeFormat("es-CR", {
+    timeZone: CLINIC_TIME_ZONE,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -136,8 +142,8 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
   const weekEnd = useMemo(() => weekDays[5], [weekDays])
 
   const weekLabel = useMemo(() => {
-    const s = weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-    const e = weekEnd.toLocaleDateString("en-US", {
+    const s = formatClinicDateFromKey(toDateKey(weekStart), { month: "short", day: "numeric" })
+    const e = formatClinicDateFromKey(toDateKey(weekEnd), {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -147,11 +153,11 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
 
   // ── Data fetching ──────────────────────────────────────────────────────────
 
-  useEffect(() => {
+  const loadWeekData = useCallback(() => {
     const start = toDateKey(weekStart)
     const end = toDateKey(weekEnd)
     setLoading(true)
-    Promise.all([fetchAppointments(start, end), fetchTimeBlocks(start, end)])
+    return Promise.all([fetchAppointments(start, end), fetchTimeBlocks(start, end)])
       .then(([apts, blocks]) => {
         setAppointments(apts)
         setTimeBlocks(blocks)
@@ -161,6 +167,18 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
       })
       .finally(() => setLoading(false))
   }, [weekStart, weekEnd])
+
+  useEffect(() => {
+    void loadWeekData()
+  }, [loadWeekData])
+
+  useEffect(() => {
+    const handler = () => {
+      void loadWeekData()
+    }
+    window.addEventListener(CITABOX_DATA_CHANGED_EVENT, handler)
+    return () => window.removeEventListener(CITABOX_DATA_CHANGED_EVENT, handler)
+  }, [loadWeekData])
 
   // ── Cell lookup maps ───────────────────────────────────────────────────────
 
@@ -230,7 +248,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
   }, [pendingSlot, blockDoctorId, blockReason])
 
   const handleDeleteBlock = useCallback(async (block: TimeBlock) => {
-    if (!confirm(`Remove block "${block.reason ?? "Blocked"}"?`)) return
+    if (!confirm(`¿Eliminar el bloqueo "${block.reason ?? "Bloqueado"}"?`)) return
     setSaving(true)
     try {
       await deleteTimeBlock(block.id)
@@ -266,7 +284,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
 
   const handleDeleteAppointment = useCallback(async () => {
     if (!selectedAppointment) return
-    if (!confirm("Permanently delete this appointment?")) return
+    if (!confirm("¿Eliminar esta cita de forma permanente?")) return
     setSaving(true)
     try {
       await deleteAppointment(selectedAppointment.id)
@@ -278,7 +296,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
     }
   }, [selectedAppointment])
 
-  const todayKey = toDateKey(new Date())
+  const todayKey = getClinicTodayKey()
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -293,12 +311,12 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-4 lg:px-6 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
-            <h3 className="text-sm font-bold text-foreground">Weekly Calendar</h3>
+            <h3 className="text-sm font-bold text-foreground">Calendario semanal</h3>
             <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-md hidden sm:inline">
               {weekLabel}
             </span>
             {loading && (
-              <span className="text-[10px] text-muted-foreground animate-pulse">Loading…</span>
+              <span className="text-[10px] text-muted-foreground animate-pulse">Cargando...</span>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -312,7 +330,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
               onClick={() => setWeekOffset(0)}
               className="px-4 py-1.5 rounded-md bg-foreground text-background text-xs font-semibold"
             >
-              Today
+              Hoy
             </button>
             <button
               onClick={() => setWeekOffset((o) => o + 1)}
@@ -342,7 +360,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
                     }`}
                     style={isToday ? { backgroundColor: "var(--neon-green)" } : {}}
                   >
-                    {dayDate.getDate()}
+                    {dayDate.getUTCDate()}
                   </span>
                   <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">
                     {DAY_LABELS[dayIdx]}
@@ -373,7 +391,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
                     onClick={() => handleCellClick(dateKey, "09:00")}
                     className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg border-2 border-dashed border-border text-xs text-muted-foreground hover:border-muted-foreground hover:bg-muted/40 transition-all mb-1.5"
                   >
-                    + Add appointment
+                    + Agregar cita
                   </button>
                 )}
               </div>
@@ -403,7 +421,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
                     }`}
                     style={isToday ? { backgroundColor: "var(--neon-green)" } : {}}
                   >
-                    {dayDate.getDate()}
+                    {dayDate.getUTCDate()}
                   </p>
                 </div>
               )
@@ -456,9 +474,9 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
 
       {/* ── Upcoming appointments list ──────────────────────────────────── */}
       <div className="bg-white rounded-lg shadow-md p-5 border border-border">
-        <h3 className="text-sm font-bold text-foreground mb-4">Upcoming Appointments</h3>
+        <h3 className="text-sm font-bold text-foreground mb-4">Próximas citas</h3>
         {appointments.filter((a) => a.status !== AppointmentStatus.CANCELLED).length === 0 ? (
-          <p className="text-xs text-muted-foreground">No appointments this week.</p>
+          <p className="text-xs text-muted-foreground">No hay citas esta semana.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {appointments
@@ -500,7 +518,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
               {pendingSlot?.date} · {pendingSlot?.time}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              Choose an action for this time slot.
+              Elige una acción para este espacio.
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 py-4 flex flex-col gap-3">
@@ -508,13 +526,13 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
               onClick={handleSlotNewAppointment}
               className="w-full px-4 py-3 rounded-md bg-foreground text-background text-sm font-semibold text-left hover:opacity-90 transition-all shadow-sm"
             >
-              📅 New Appointment
+              Nueva cita
             </button>
             <button
               onClick={handleSlotBlockTime}
               className="w-full px-4 py-3 rounded-md bg-red-50 text-red-700 border border-red-200 text-sm font-semibold text-left hover:bg-red-100 transition-all"
             >
-              🚫 Block This Time Slot
+              Bloquear este espacio
             </button>
           </div>
         </DialogContent>
@@ -524,21 +542,21 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
       <Dialog open={blockDialogOpen} onOpenChange={(o) => !o && setBlockDialogOpen(false)}>
         <DialogContent className="rounded-lg w-[95vw] max-w-sm p-0 overflow-hidden gap-0">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
-            <DialogTitle className="text-sm font-bold">Block Time Slot</DialogTitle>
+            <DialogTitle className="text-sm font-bold">Bloquear espacio</DialogTitle>
             <DialogDescription className="sr-only">
-              Block a doctor&apos;s availability for a 30-minute slot.
+              Bloquea la disponibilidad de un doctor por 30 minutos.
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 py-5 flex flex-col gap-4">
             <p className="text-xs text-muted-foreground">
-              Blocking <strong>{pendingSlot?.date}</strong> at{" "}
+              Bloqueando <strong>{pendingSlot?.date}</strong> a las{" "}
               <strong>{pendingSlot?.time}</strong> (30 min)
             </p>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">Doctor ID</label>
+              <label className="text-xs font-semibold text-foreground">ID del doctor</label>
               <input
                 type="text"
-                placeholder="Paste doctor UUID…"
+                placeholder="Pega el UUID del doctor..."
                 value={blockDoctorId}
                 onChange={(e) => setBlockDoctorId(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
@@ -546,11 +564,11 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-foreground">
-                Reason <span className="text-muted-foreground font-normal">(optional)</span>
+                Motivo <span className="text-muted-foreground font-normal">(opcional)</span>
               </label>
               <input
                 type="text"
-                placeholder="e.g. Lunch break, Personal leave…"
+                placeholder="Ej. almuerzo, permiso personal..."
                 value={blockReason}
                 onChange={(e) => setBlockReason(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
@@ -562,14 +580,14 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
               onClick={() => setBlockDialogOpen(false)}
               className="flex-1 px-4 py-2 rounded-md border border-border text-sm font-medium text-foreground hover:bg-muted transition-all"
             >
-              Cancel
+              Cancelar
             </button>
             <button
               onClick={handleCreateBlock}
               disabled={saving || !blockDoctorId.trim()}
               className="flex-1 px-4 py-2 rounded-md bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
             >
-              {saving ? "Saving…" : "Block Slot"}
+              {saving ? "Guardando..." : "Bloquear"}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -579,15 +597,15 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
       <Dialog open={editDialogOpen} onOpenChange={(o) => !o && setEditDialogOpen(false)}>
         <DialogContent className="rounded-lg w-[95vw] max-w-sm p-0 overflow-hidden gap-0">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
-            <DialogTitle className="text-sm font-bold">Appointment Details</DialogTitle>
+            <DialogTitle className="text-sm font-bold">Detalle de la cita</DialogTitle>
             <DialogDescription className="sr-only">
-              View and manage this appointment.
+              Consulta y administra esta cita.
             </DialogDescription>
           </DialogHeader>
           {selectedAppointment && (
             <>
               <div className="px-6 py-5 flex flex-col gap-3">
-                <InfoRow label="Patient">
+                <InfoRow label="Paciente">
                   {selectedAppointment.patient.first_name}{" "}
                   {selectedAppointment.patient.last_name}
                 </InfoRow>
@@ -595,19 +613,19 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
                   {selectedAppointment.doctor.first_name}{" "}
                   {selectedAppointment.doctor.last_name}
                 </InfoRow>
-                <InfoRow label="Time">
+                <InfoRow label="Hora">
                   {toClinicLocal(selectedAppointment.start_time).dateKey}{" "}
                   {toClinicLocal(selectedAppointment.start_time).timeKey}
                 </InfoRow>
                 {selectedAppointment.reason && (
-                  <InfoRow label="Reason">{selectedAppointment.reason}</InfoRow>
+                  <InfoRow label="Motivo">{selectedAppointment.reason}</InfoRow>
                 )}
                 {selectedAppointment.service && (
-                  <InfoRow label="Service">{selectedAppointment.service.name}</InfoRow>
+                  <InfoRow label="Servicio">{selectedAppointment.service.name}</InfoRow>
                 )}
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                    Status
+                    Estado
                   </span>
                   <span className="text-xs font-semibold bg-muted px-2 py-0.5 rounded-md">
                     {selectedAppointment.status}
@@ -623,20 +641,20 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
                   }
                   className="w-full px-4 py-2.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 text-sm font-semibold hover:bg-amber-100 transition-all disabled:opacity-50"
                 >
-                  Mark as Cancelled
+                  Marcar como cancelada
                 </button>
                 <button
                   onClick={handleDeleteAppointment}
                   disabled={saving}
                   className="w-full px-4 py-2.5 rounded-md bg-red-50 text-red-700 border border-red-200 text-sm font-semibold hover:bg-red-100 transition-all disabled:opacity-50"
                 >
-                  {saving ? "Deleting…" : "Delete Appointment"}
+                  {saving ? "Eliminando..." : "Eliminar cita"}
                 </button>
                 <button
                   onClick={() => setEditDialogOpen(false)}
                   className="w-full px-4 py-2.5 rounded-md border border-border text-sm font-medium text-foreground hover:bg-muted transition-all"
                 >
-                  Close
+                  Cerrar
                 </button>
               </DialogFooter>
             </>

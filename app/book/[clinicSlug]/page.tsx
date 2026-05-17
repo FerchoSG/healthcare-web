@@ -25,7 +25,7 @@ export default function ClinicBookPage({
         if (!cancelled) setClinic(data)
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Clinic not found")
+        if (!cancelled) setError(err instanceof Error ? err.message : "No se encontró la clínica")
       })
     return () => {
       cancelled = true
@@ -36,7 +36,7 @@ export default function ClinicBookPage({
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
         <div className="bg-white border border-slate-200 rounded-lg shadow-md p-6 max-w-md text-center">
-          <h1 className="text-lg font-bold text-slate-900">Clinic unavailable</h1>
+          <h1 className="text-lg font-bold text-slate-900">Clínica no disponible</h1>
           <p className="text-sm text-slate-500 mt-2">{error}</p>
         </div>
       </div>
@@ -54,7 +54,7 @@ export default function ClinicBookPage({
   return (
     <div data-light-only="true">
       {view === "welcome" ? (
-        <WelcomeLandingPage onBook={() => setView("wizard")} />
+        <WelcomeLandingPage clinic={clinic} onBook={() => setView("wizard")} />
       ) : (
         <PatientBookingWizard clinicId={clinic.id} clinic={clinic} onHome={() => setView("welcome")} />
       )}

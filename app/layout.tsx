@@ -1,17 +1,18 @@
 import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
+import { BRAND_DOMAIN, BRAND_NAME, BRAND_TAGLINE } from '@/lib/brand'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'CitaBox — Healthcare SaaS Platform',
-  description: 'CitaBox – The all-in-one clinic management platform. Book appointments, manage records, and streamline billing at citabox.app.',
-  generator: 'citabox.app',
+  title: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
+  description: `${BRAND_NAME} ayuda a clinicas en Costa Rica a gestionar citas, pacientes, expedientes y portal del paciente desde una sola plataforma.`,
+  generator: BRAND_DOMAIN,
   openGraph: {
-    title: 'CitaBox — Healthcare SaaS Platform',
-    description: 'CitaBox – The all-in-one clinic management platform.',
-    siteName: 'CitaBox',
-    url: 'https://citabox.app',
+    title: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
+    description: `${BRAND_NAME} ayuda a clinicas en Costa Rica a gestionar citas, pacientes, expedientes y portal del paciente desde una sola plataforma.`,
+    siteName: BRAND_NAME,
+    url: `https://${BRAND_DOMAIN}`,
   },
 }
 
