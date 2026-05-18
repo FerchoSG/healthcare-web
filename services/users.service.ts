@@ -7,6 +7,7 @@ export interface ClinicStaffMember extends User {
   membership_id?: string;
   invite_delivery?: "sent" | "skipped";
   is_active?: boolean;
+  deleted_at?: string | null;
 }
 
 export interface CreateClinicStaffPayload {
@@ -39,4 +40,8 @@ export function updateClinicStaff(
   payload: UpdateClinicStaffPayload,
 ): Promise<ClinicStaffMember> {
   return api.patch<ClinicStaffMember>(`/users/${encodeURIComponent(membershipId)}`, payload);
+}
+
+export function deleteClinicStaff(membershipId: string): Promise<ClinicStaffMember> {
+  return api.delete<ClinicStaffMember>(`/users/${encodeURIComponent(membershipId)}`);
 }

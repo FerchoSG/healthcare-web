@@ -16,6 +16,12 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import {
+  addMinutesToIso,
+  clinicLocalDateTimeToIso,
+  getClinicAgeFromBirthDate,
+  getClinicTodayKey,
+} from "@/lib/clinic-time"
 import { emitDataChanged } from "@/lib/data-events"
 import { createAppointment } from "@/services/appointments.service"
 import { fetchDoctors } from "@/services/clinic-services.service"
@@ -43,12 +49,7 @@ function patientName(patient: Patient) {
 }
 
 function patientAge(patient: Patient) {
-  const birth = new Date(patient.birth_date)
-  const today = new Date()
-  let age = today.getFullYear() - birth.getFullYear()
-  const monthDiff = today.getMonth() - birth.getMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--
-  return age
+  return getClinicAgeFromBirthDate(patient.birth_date)
 }
 
 function patientInitials(patient: Patient) {
@@ -63,11 +64,11 @@ function avatarColor(label: string) {
 }
 
 function toIsoDateTime(date: string, time: string) {
-  return new Date(`${date}T${time}:00`).toISOString()
+  return clinicLocalDateTimeToIso(date, time)
 }
 
 function plusMinutes(iso: string, minutes: number) {
-  return new Date(new Date(iso).getTime() + minutes * 60 * 1000).toISOString()
+  return addMinutesToIso(iso, minutes)
 }
 
 export function NewAppointmentDialog({
@@ -80,7 +81,7 @@ export function NewAppointmentDialog({
   const [patientSearch, setPatientSearch] = useState("")
   const [selectedPatientId, setSelectedPatientId] = useState("")
   const [doctorId, setDoctorId] = useState("")
-  const [date, setDate] = useState(preselectedSlot?.date || new Date().toLocaleDateString("en-CA"))
+  const [date, setDate] = useState(preselectedSlot?.date || getClinicTodayKey())
   const [time, setTime] = useState(preselectedSlot?.time || "09:00")
   const [reason, setReason] = useState("")
   const [showCombo, setShowCombo] = useState(false)
@@ -100,7 +101,7 @@ export function NewAppointmentDialog({
     setShowNewPatientForm(false)
     setPatientForm(EMPTY_PATIENT_FORM)
     setError(null)
-    setDate(preselectedSlot?.date || new Date().toLocaleDateString("en-CA"))
+    setDate(preselectedSlot?.date || getClinicTodayKey())
     setTime(preselectedSlot?.time || "09:00")
     setDoctorId(nextDoctors[0]?.id || "")
   }
@@ -546,7 +547,7 @@ export function WalkInSheet({ open, onClose }: WalkInSheetProps) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">Genero</label>
+              <label className="text-xs font-semibold text-foreground">Género</label>
               <select
                 value={form.gender}
                 onChange={set("gender")}

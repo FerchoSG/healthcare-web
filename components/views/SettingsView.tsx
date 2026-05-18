@@ -1,12 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Loader2, Pencil, Save, UserPlus, X } from "lucide-react"
+import { Loader2, Pencil, Save, Trash2, UserPlus, X } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ServicesManagementView } from "./ServicesManagementView"
 import { fetchCurrentClinic, updateCurrentClinic } from "@/services/clinics.service"
 import {
   createClinicStaff,
+  deleteClinicStaff,
   fetchClinicStaff,
   updateClinicStaff,
   type ClinicStaffMember,
@@ -22,6 +23,7 @@ import {
 import { BRAND_DOMAIN, BRAND_SUPPORT_EMAIL } from "@/lib/brand"
 
 export function SettingsView() {
+  const [staffFilter, setStaffFilter] = useState<"active" | "inactive" | "all">("active")
   const [clinic, setClinic] = useState({
     name: "",
     clinicType: "GENERAL_MEDICINE" as ClinicType,
@@ -40,6 +42,7 @@ export function SettingsView() {
   const [showInvite, setShowInvite] = useState(false)
   const [editingMembershipId, setEditingMembershipId] = useState<string | null>(null)
   const [savingMemberId, setSavingMemberId] = useState<string | null>(null)
+  const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null)
   const [savingClinic, setSavingClinic] = useState(false)
   const [savingInvite, setSavingInvite] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -137,7 +140,7 @@ export function SettingsView() {
       setInviteMessage(
         created.invite_delivery === "sent"
           ? "Invitación enviada por correo."
-          : "Usuario agregado. El correo se omitió porque Postmark no está configurado.",
+          : "Usuario agregado. El correo no se pudo enviar desde Resend. Revisa la configuración del remitente o el dominio.",
       )
       setShowInvite(false)
     } catch (err) {
@@ -186,6 +189,34 @@ export function SettingsView() {
     }
   }
 
+  const handleDeleteMember = async (member: ClinicStaffMember) => {
+    if (!member.membership_id) {
+      setError("No se pudo identificar la membresía del usuario")
+      return
+    }
+
+    const confirmed = window.confirm(
+      `Se eliminará a ${member.first_name} ${member.last_name} del equipo de esta clínica. ¿Deseas continuar?`,
+    )
+    if (!confirmed) return
+
+    try {
+      setDeletingMemberId(member.membership_id)
+      setError(null)
+      const removed = await deleteClinicStaff(member.membership_id)
+      setStaff((prev) =>
+        prev.map((item) => (item.membership_id === removed.membership_id ? removed : item)),
+      )
+      if (editingMembershipId === member.membership_id) {
+        setEditingMembershipId(null)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo eliminar el usuario")
+    } finally {
+      setDeletingMemberId(null)
+    }
+  }
+
   const setField = (key: keyof typeof clinic) => (event: React.ChangeEvent<HTMLInputElement>) =>
     setClinic((prev) => ({ ...prev, [key]: event.target.value }))
 
@@ -209,6 +240,24 @@ export function SettingsView() {
       return { ...prev, specialtyModules: [...modules] }
     })
   }
+
+  const visibleStaff = staff.filter((member) => {
+    const isDeleted = Boolean(member.deleted_at)
+    const isInactive = member.is_active === false || isDeleted
+
+    if (staffFilter === "active") {
+      return !isInactive
+    }
+
+    if (staffFilter === "inactive") {
+      return isInactive
+    }
+
+    return true
+  })
+
+  const activeCount = staff.filter((member) => member.is_active !== false && !member.deleted_at).length
+  const inactiveCount = staff.filter((member) => member.is_active === false || Boolean(member.deleted_at)).length
 
   return (
     <div className="flex flex-col gap-4 p-4 lg:p-6 h-full overflow-y-auto">
@@ -373,7 +422,31 @@ export function SettingsView() {
 
             <TabsContent value="staff" className="p-4 sm:p-6 mt-0">
               <div className="flex items-center justify-between mb-5">
-                <p className="text-xs text-muted-foreground">{staff.length} miembros activos</p>
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    {activeCount} activos, {inactiveCount} inactivos o eliminados
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {[
+                      { value: "active", label: "Activos" },
+                      { value: "inactive", label: "Inactivos" },
+                      { value: "all", label: "Todos" },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setStaffFilter(option.value as "active" | "inactive" | "all")}
+                        className={`rounded-md px-3 py-1.5 text-[11px] font-semibold transition-all ${
+                          staffFilter === option.value
+                            ? "bg-foreground text-background"
+                            : "border border-border bg-white text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowInvite(true)}
                   className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-all"
@@ -434,7 +507,7 @@ export function SettingsView() {
                     />
                   </div>
                   <p className="mt-3 text-xs text-muted-foreground">
-                    CitaBox generará una clave temporal y enviará el acceso por correo cuando Postmark esté configurado.
+                    CitaBox generará una clave temporal y enviará el acceso por correo cuando Resend esté configurado.
                   </p>
                   <div className="flex gap-2 mt-3">
                     <button onClick={() => setShowInvite(false)} className="px-4 py-1.5 rounded-md bg-white text-muted-foreground text-xs font-semibold border border-border hover:text-foreground transition-all shadow-sm">
@@ -465,7 +538,7 @@ export function SettingsView() {
                       </tr>
                     </thead>
                     <tbody>
-                      {staff.map((member) => (
+                      {visibleStaff.map((member) => (
                         <tr key={member.membership_id ?? member.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-all">
                           <td className="px-5 py-3.5 text-xs font-semibold text-foreground">
                             {member.first_name} {member.last_name}
@@ -520,12 +593,12 @@ export function SettingsView() {
                             ) : (
                               <span
                                 className={`text-[11px] font-semibold px-2.5 py-1 rounded-md ${
-                                  member.is_active === false
+                                  member.is_active === false || member.deleted_at
                                     ? "bg-red-50 text-red-700"
                                     : "bg-emerald-50 text-emerald-700"
                                 }`}
                               >
-                                {member.is_active === false ? "Inactivo" : "Activo"}
+                                {member.deleted_at ? "Eliminado" : member.is_active === false ? "Inactivo" : "Activo"}
                               </span>
                             )}
                           </td>
@@ -551,18 +624,37 @@ export function SettingsView() {
                                 </button>
                               </div>
                             ) : (
-                              <button
-                                type="button"
-                                onClick={() => startEditMember(member)}
-                                className="inline-flex items-center gap-1 rounded-md border border-border bg-white px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-muted"
-                              >
-                                <Pencil size={12} />
-                                Editar
-                              </button>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => startEditMember(member)}
+                                  disabled={deletingMemberId === member.membership_id || Boolean(member.deleted_at)}
+                                  className="inline-flex items-center gap-1 rounded-md border border-border bg-white px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-muted disabled:opacity-50"
+                                >
+                                  <Pencil size={12} />
+                                  Editar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDeleteMember(member)}
+                                  disabled={deletingMemberId === member.membership_id || Boolean(member.deleted_at)}
+                                  className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+                                >
+                                  <Trash2 size={12} />
+                                  {deletingMemberId === member.membership_id ? "Eliminando..." : "Eliminar"}
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>
                       ))}
+                      {visibleStaff.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="px-5 py-6 text-center text-sm text-muted-foreground">
+                            No hay usuarios para este filtro.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

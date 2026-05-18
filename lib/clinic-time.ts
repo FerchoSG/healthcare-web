@@ -77,6 +77,16 @@ export function getClinicNowDate() {
   return parseClinicDateKey(getClinicTodayKey())
 }
 
+export function clinicLocalDateTimeToIso(dateKey: string, timeKey: string) {
+  const [year, month, day] = dateKey.split("-").map(Number)
+  const [hour, minute] = timeKey.split(":").map(Number)
+  return new Date(Date.UTC(year, month - 1, day, hour + 6, minute, 0)).toISOString()
+}
+
+export function addMinutesToIso(iso: string, minutes: number) {
+  return new Date(new Date(iso).getTime() + minutes * 60 * 1000).toISOString()
+}
+
 export function getClinicAgeFromBirthDate(birthDate: string) {
   const birth = new Date(birthDate)
   const todayKey = getClinicTodayKey()

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { UserPlus, CalendarPlus, Clock, CheckCircle, DollarSign, Loader2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CITABOX_DATA_CHANGED_EVENT } from "@/lib/data-events"
 import {
   formatClinicDateFromKey,
@@ -13,6 +14,14 @@ import { AppointmentStatus, PaymentMethod, PaymentStatus, type Appointment, type
 import { fetchAppointments, updateAppointmentStatus } from "@/services/appointments.service"
 import { createInvoice, fetchInvoices, updateInvoice } from "@/services/billing.service"
 import { useToast } from "@/hooks/use-toast"
+
+function formatMoney(amount: number) {
+  return new Intl.NumberFormat("es-CR", {
+    style: "currency",
+    currency: "CRC",
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
 
 function formatDateLabel(dateStr: string) {
   const today = getClinicTodayKey()
@@ -77,6 +86,13 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
   const [mutatingId, setMutatingId] = useState<string | null>(null)
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [closingId, setClosingId] = useState<string | null>(null)
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const [selectedCheckout, setSelectedCheckout] = useState<Appointment | null>(null)
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(PaymentStatus.PAID)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.SINPE_MOVIL)
+  const [paymentReference, setPaymentReference] = useState("")
+  const [paidAmountInput, setPaidAmountInput] = useState("")
+  const [checkoutNotes, setCheckoutNotes] = useState("")
   const { toast } = useToast()
 
   const load = useCallback(async () => {
@@ -152,6 +168,35 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
     return !invoice || invoice.payment_status !== PaymentStatus.PAID
   })
 
+  const openCheckout = (appointment: Appointment) => {
+    const existingInvoice = invoicesByAppointmentId.get(appointment.id)
+    const totalAmount = appointment.service?.price ? appointment.service.price / 100 : 0
+
+    setSelectedCheckout(appointment)
+    setPaymentStatus(existingInvoice?.payment_status ?? PaymentStatus.PAID)
+    setPaymentMethod(existingInvoice?.payment_method ?? PaymentMethod.SINPE_MOVIL)
+    setPaymentReference(existingInvoice?.payment_reference ?? `SINPE-${appointment.id.slice(0, 8)}`)
+    setPaidAmountInput(
+      existingInvoice?.paid_amount != null
+        ? String(existingInvoice.paid_amount)
+        : totalAmount > 0
+          ? String(totalAmount)
+          : "",
+    )
+    setCheckoutNotes(existingInvoice?.notes ?? "Cobro manual registrado desde recepción.")
+    setCheckoutOpen(true)
+  }
+
+  const closeCheckout = () => {
+    setCheckoutOpen(false)
+    setSelectedCheckout(null)
+    setPaymentStatus(PaymentStatus.PAID)
+    setPaymentMethod(PaymentMethod.SINPE_MOVIL)
+    setPaymentReference("")
+    setPaidAmountInput("")
+    setCheckoutNotes("")
+  }
+
   const handleCloseCheckout = async (appointment: Appointment) => {
     if (!appointment.service?.price || appointment.service.price <= 0) {
       toast({
@@ -163,28 +208,38 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
     }
 
     const existingInvoice = invoicesByAppointmentId.get(appointment.id)
+    const totalAmount = appointment.service.price / 100
+    const paidAmount = paymentStatus === PaymentStatus.UNPAID ? undefined : Number(paidAmountInput)
     const payload = {
       appointment_id: appointment.id,
       patient_id: appointment.patient_id,
-      total_amount: appointment.service.price / 100,
+      total_amount: totalAmount,
       service_description: appointment.reason ?? appointment.service.name,
-      payment_status: PaymentStatus.PAID,
-      payment_method: PaymentMethod.SINPE_MOVIL,
-      payment_reference: `SINPE-${appointment.id.slice(0, 8)}`,
-      paid_amount: appointment.service.price / 100,
-      paid_at: new Date().toISOString(),
-      notes: "Cobro manual registrado desde recepción.",
+      payment_status: paymentStatus,
+      payment_method: paymentMethod,
+      payment_reference: paymentReference || undefined,
+      paid_amount: paidAmount,
+      notes: checkoutNotes || undefined,
+    }
+    const createPayload = {
+      ...payload,
+      ...(paymentStatus !== PaymentStatus.UNPAID ? { paid_at: new Date().toISOString() } : {}),
+    }
+    const updatePayload = {
+      ...payload,
+      paid_at: paymentStatus === PaymentStatus.UNPAID ? null : new Date().toISOString(),
     }
 
     try {
       setClosingId(appointment.id)
       const invoice = existingInvoice
-        ? await updateInvoice(existingInvoice.id, payload)
-        : await createInvoice(payload)
+        ? await updateInvoice(existingInvoice.id, updatePayload)
+        : await createInvoice(createPayload)
       setInvoices((prev) => {
         const next = prev.filter((item) => item.id !== invoice.id)
         return [invoice, ...next]
       })
+      closeCheckout()
       toast({
         title: "Cobro registrado",
         description: `Se marcó la cita de ${appointment.patient.first_name} ${appointment.patient.last_name} como pagada por SINPE Móvil.`,
@@ -394,11 +449,11 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
                       )}
                     </div>
                     <button
-                      onClick={() => handleCloseCheckout(apt)}
+                      onClick={() => openCheckout(apt)}
                       disabled={isClosing}
                       className="text-[10px] font-semibold px-2.5 py-1 rounded-md bg-foreground text-background hover:opacity-80 transition-all disabled:opacity-50"
                     >
-                      {isClosing ? "Registrando..." : "Marcar pagado (SINPE)"}
+                      {isClosing ? "Registrando..." : invoice ? "Editar cobro" : "Registrar cobro"}
                     </button>
                   </div>
                 )})}
@@ -407,6 +462,115 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
           </div>
         </div>
       </div>
+
+      <Dialog open={checkoutOpen} onOpenChange={(next) => !next && closeCheckout()}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Registrar cobro manual</DialogTitle>
+            <DialogDescription>
+              {selectedCheckout
+                ? `Gestiona el cobro de ${selectedCheckout.patient.first_name} ${selectedCheckout.patient.last_name}.`
+                : "Gestiona el cobro de la cita seleccionada."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedCheckout && (
+            <div className="grid gap-4">
+              <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm">
+                <p className="font-semibold text-foreground">
+                  {selectedCheckout.reason ?? selectedCheckout.service?.name ?? "Cita"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {formatTime(selectedCheckout.start_time)} • Total esperado {formatMoney((selectedCheckout.service?.price ?? 0) / 100)}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <label className="grid gap-1.5 text-sm">
+                  <span className="font-medium text-foreground">Estado de pago</span>
+                  <select
+                    value={paymentStatus}
+                    onChange={(e) => setPaymentStatus(e.target.value as PaymentStatus)}
+                    className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  >
+                    <option value={PaymentStatus.UNPAID}>Pendiente</option>
+                    <option value={PaymentStatus.PARTIAL}>Parcial</option>
+                    <option value={PaymentStatus.PAID}>Pagado</option>
+                  </select>
+                </label>
+
+                <label className="grid gap-1.5 text-sm">
+                  <span className="font-medium text-foreground">Método</span>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                    className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  >
+                    <option value={PaymentMethod.SINPE_MOVIL}>SINPE Móvil</option>
+                    <option value={PaymentMethod.TARJETA}>Tarjeta</option>
+                    <option value={PaymentMethod.EFECTIVO}>Efectivo</option>
+                    <option value={PaymentMethod.TRANSFERENCIA}>Transferencia</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <label className="grid gap-1.5 text-sm">
+                  <span className="font-medium text-foreground">Referencia</span>
+                  <input
+                    value={paymentReference}
+                    onChange={(e) => setPaymentReference(e.target.value)}
+                    placeholder="SINPE-12345678"
+                    className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  />
+                </label>
+
+                <label className="grid gap-1.5 text-sm">
+                  <span className="font-medium text-foreground">Monto abonado</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={paymentStatus === PaymentStatus.UNPAID ? "" : paidAmountInput}
+                    onChange={(e) => setPaidAmountInput(e.target.value)}
+                    disabled={paymentStatus === PaymentStatus.UNPAID}
+                    placeholder={paymentStatus === PaymentStatus.PAID && selectedCheckout.service?.price ? String(selectedCheckout.service.price / 100) : "0.00"}
+                    className="rounded-md border border-border bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+                </label>
+              </div>
+
+              <label className="grid gap-1.5 text-sm">
+                <span className="font-medium text-foreground">Notas</span>
+                <textarea
+                  value={checkoutNotes}
+                  onChange={(e) => setCheckoutNotes(e.target.value)}
+                  rows={3}
+                  className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
+          )}
+
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={closeCheckout}
+              className="rounded-md border border-border px-4 py-2 text-sm font-semibold text-foreground"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => selectedCheckout && void handleCloseCheckout(selectedCheckout)}
+              disabled={closingId === selectedCheckout?.id}
+              className="rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background disabled:opacity-60"
+            >
+              {closingId === selectedCheckout?.id ? "Guardando..." : "Guardar cobro"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

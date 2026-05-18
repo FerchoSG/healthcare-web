@@ -21,6 +21,14 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
+import {
+  formatClinicDateFromKey,
+  formatClinicDateKey,
+  formatClinicDateTime,
+  formatClinicTime,
+  getClinicTodayKey,
+  parseClinicDateKey,
+} from "@/lib/clinic-time"
 import { AppointmentStatus, type Appointment, type KPIs, type Patient, type RevenueDataPoint } from "@/types/api"
 import { fetchTodayAppointments } from "@/services/appointments.service"
 import { fetchKpis, fetchRevenue } from "@/services/analytics.service"
@@ -93,20 +101,15 @@ function formatCompact(value: number) {
 }
 
 function formatTime(value: string) {
-  return new Date(value).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  })
+  return formatClinicTime(value)
 }
 
 function formatDate(value: string) {
-  const date = new Date(`${value}T12:00:00`)
-  return date.toLocaleDateString("es-CR", { month: "short", day: "numeric" })
+  return formatClinicDateFromKey(value, { month: "short", day: "numeric" })
 }
 
 function formatFullDate(value: Date) {
-  return value.toLocaleDateString("es-CR", {
+  return formatClinicDateFromKey(formatClinicDateKey(value), {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -128,9 +131,9 @@ function getAvatarColor(patient: Patient) {
 function buildRevenueSeries(revenue: RevenueDataPoint[]) {
   const byDate = new Map(revenue.map((point) => [point.date, point.total]))
   return Array.from({ length: 14 }, (_, index) => {
-    const date = new Date()
-    date.setDate(date.getDate() - (13 - index))
-    const key = date.toISOString().slice(0, 10)
+    const date = parseClinicDateKey(getClinicTodayKey())
+    date.setUTCDate(date.getUTCDate() - (13 - index))
+    const key = formatClinicDateKey(date)
     return {
       date: key,
       label: formatDate(key),
@@ -253,13 +256,13 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
       <div className="flex flex-col gap-4 p-4 lg:p-6">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs font-medium text-muted-foreground">{formatFullDate(new Date())}</p>
+            <p className="text-xs font-medium text-muted-foreground">{formatClinicDateFromKey(getClinicTodayKey(), { weekday: "long", month: "long", day: "numeric" })}</p>
             <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">Panel administrativo</h1>
           </div>
           <div className="flex items-center gap-3">
             {lastUpdated && (
               <p className="hidden text-xs text-muted-foreground sm:block">
-                Actualizado {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                Actualizado {formatClinicTime(lastUpdated.toISOString())}
               </p>
             )}
             <button
@@ -421,7 +424,7 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
                       <p className="truncate text-xs text-muted-foreground">{patient.identification}</p>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(patient.createdAt).toLocaleDateString("es-CR", { month: "short", day: "numeric" })}
+                      {formatClinicDateTime(patient.createdAt, { month: "short", day: "numeric" })}
                     </span>
                   </div>
                 ))}
