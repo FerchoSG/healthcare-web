@@ -15,6 +15,45 @@ function parseDateKeyParts(dateKey: string) {
   return { year, month, day }
 }
 
+export function getClinicLocalParts(isoString: string) {
+  const parts = getFormatter({
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date(isoString))
+
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "00"
+  const hour = String(Number(get("hour")) % 24).padStart(2, "0")
+
+  return {
+    dateKey: `${get("year")}-${get("month")}-${get("day")}`,
+    timeKey: `${hour}:${get("minute")}`,
+    year: Number(get("year")),
+    month: Number(get("month")),
+    day: Number(get("day")),
+    hour: Number(hour),
+    minute: Number(get("minute")),
+  }
+}
+
+export function getClinicLocalSlot(isoString: string, slotMinutes = 30) {
+  const local = getClinicLocalParts(isoString)
+  const totalMinutes = local.hour * 60 + local.minute
+  const roundedMinutes = Math.round(totalMinutes / slotMinutes) * slotMinutes
+  const dayOffset = Math.floor(roundedMinutes / (24 * 60))
+  const normalizedMinutes = roundedMinutes % (24 * 60)
+  const hour = Math.floor(normalizedMinutes / 60)
+  const minute = normalizedMinutes % 60
+
+  return {
+    dateKey: dayOffset === 0 ? local.dateKey : shiftClinicDateKey(local.dateKey, dayOffset),
+    timeKey: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
+  }
+}
+
 export function getClinicTodayKey() {
   const parts = getFormatter({
     year: "numeric",
@@ -81,6 +120,10 @@ export function clinicLocalDateTimeToIso(dateKey: string, timeKey: string) {
   const [year, month, day] = dateKey.split("-").map(Number)
   const [hour, minute] = timeKey.split(":").map(Number)
   return new Date(Date.UTC(year, month - 1, day, hour + 6, minute, 0)).toISOString()
+}
+
+export function clinicLocalDateTimeToMs(dateKey: string, timeKey: string) {
+  return new Date(clinicLocalDateTimeToIso(dateKey, timeKey)).getTime()
 }
 
 export function addMinutesToIso(iso: string, minutes: number) {

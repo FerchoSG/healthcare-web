@@ -413,14 +413,14 @@ export function EMRView({ patientId, onClose, initialConsultationActive = false,
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(17,27,63,0.34)] p-0 backdrop-blur-sm sm:p-4"
       style={{ backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
     >
-      <div className="flex h-full min-h-0 w-full flex-col border-0 border-border bg-white shadow-2xl sm:h-[92vh] sm:w-[96vw] sm:max-w-6xl sm:rounded-lg sm:border">
+      <div className="flex h-full min-h-0 w-full flex-col border-0 border-border bg-white shadow-[0_30px_90px_rgba(20,60,146,0.2)] sm:h-[92vh] sm:w-[96vw] sm:max-w-6xl sm:rounded-[24px] sm:border">
         <div className="flex items-center justify-between border-b border-border px-4 py-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <div
-              className="flex h-10 w-10 items-center justify-center rounded-md text-sm font-bold text-white"
+              className="flex h-11 w-11 items-center justify-center rounded-[14px] text-sm font-bold text-white shadow-md"
               style={{ backgroundColor: patient.avatarColor }}
             >
               {patient.avatarInitials}
@@ -452,7 +452,7 @@ export function EMRView({ patientId, onClose, initialConsultationActive = false,
                 type="button"
                 onClick={() => void handleFinishConsultation()}
                 disabled={saving}
-                className="flex items-center gap-1.5 rounded-md bg-red-500 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-red-600 disabled:opacity-60"
+                className="flex items-center gap-1.5 rounded-[12px] bg-red-500 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-red-600 disabled:opacity-60"
               >
                 <X size={12} />
                 {saving ? "Finalizando..." : "Finalizar consulta"}
@@ -461,7 +461,7 @@ export function EMRView({ patientId, onClose, initialConsultationActive = false,
               <button
                 type="button"
                 onClick={() => setIsConsultationActive(true)}
-                className="flex items-center gap-1.5 rounded-md px-4 py-2 text-xs font-semibold text-white transition-all hover:opacity-90"
+                className="citabox-primary-gradient flex items-center gap-1.5 rounded-[12px] px-4 py-2 text-xs font-bold text-white transition-all hover:brightness-95"
                 style={{ backgroundColor: "var(--neon-green)" }}
               >
                 Iniciar consulta
@@ -471,7 +471,7 @@ export function EMRView({ patientId, onClose, initialConsultationActive = false,
             <button
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-muted-foreground transition-all hover:text-foreground"
+              className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-[var(--surface-soft)] text-muted-foreground transition-all hover:text-foreground"
               aria-label="Cerrar expediente"
             >
               <X size={14} />
@@ -485,7 +485,7 @@ export function EMRView({ patientId, onClose, initialConsultationActive = false,
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-4 py-2 text-xs font-semibold transition-all ${
+              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[12px] px-4 py-2 text-xs font-bold transition-all ${
                 activeTab === tab.key ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -510,7 +510,7 @@ export function EMRView({ patientId, onClose, initialConsultationActive = false,
                   value={chiefComplaint}
                   onChange={(e) => setChiefComplaint(e.target.value)}
                   disabled={!isConsultationActive}
-                  className="w-full rounded-lg bg-muted px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full rounded-[14px] border border-border bg-[var(--surface-soft)] px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
 
@@ -522,7 +522,7 @@ export function EMRView({ patientId, onClose, initialConsultationActive = false,
                   placeholder="Ingresa el diagnóstico..."
                   rows={3}
                   disabled={!isConsultationActive}
-                  className="w-full resize-none rounded-lg bg-muted px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full resize-none rounded-[14px] border border-border bg-[var(--surface-soft)] px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
 
@@ -534,7 +534,7 @@ export function EMRView({ patientId, onClose, initialConsultationActive = false,
                   placeholder="Ingresa el plan de tratamiento..."
                   rows={4}
                   disabled={!isConsultationActive}
-                  className="w-full resize-none rounded-lg bg-muted px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full resize-none rounded-[14px] border border-border bg-[var(--surface-soft)] px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
 
@@ -542,13 +542,13 @@ export function EMRView({ patientId, onClose, initialConsultationActive = false,
                 type="button"
                 onClick={saveClinicalNotes}
                 disabled={!isConsultationActive || saving}
-                className="mt-2 w-full rounded-md bg-foreground py-3 text-sm font-semibold text-background transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                className="citabox-primary-gradient mt-2 w-full rounded-[12px] py-3 text-sm font-bold text-white transition-all hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {saving ? "Guardando..." : "Guardar expediente clínico"}
               </button>
 
               {records.length > 0 && (
-                <div className="rounded-lg border border-border bg-white p-4 shadow-md">
+                <div className="citabox-card p-4">
                   <h4 className="mb-3 text-xs font-bold text-foreground">Registros recientes</h4>
                   <div className="flex flex-col gap-3">
                     {records.slice(0, 5).map((record) => (
@@ -568,7 +568,7 @@ export function EMRView({ patientId, onClose, initialConsultationActive = false,
           {activeTab === "odontogram" && (
             <div className="flex flex-col gap-6">
               <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
-                <div className="overflow-hidden rounded-lg border border-border bg-muted/40 p-4 sm:p-6">
+                <div className="overflow-hidden rounded-[18px] border border-border bg-[var(--surface-soft)] p-4 sm:p-6">
                   <div className="mb-6 flex flex-wrap items-center gap-3">
                     {(Object.entries(conditionColors) as [ToothCondition, string][]).map(([condition, color]) => (
                       <div key={condition} className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -578,7 +578,7 @@ export function EMRView({ patientId, onClose, initialConsultationActive = false,
                     ))}
                   </div>
 
-                  <div className="overflow-x-auto rounded-xl border border-border bg-white/80 p-4 sm:p-6">
+                  <div className="overflow-x-auto rounded-[18px] border border-border bg-white/90 p-4 sm:p-6">
                     <div className="min-w-[760px]">
                       <div className="mb-2 flex justify-center">
                         <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Arcada superior</p>
@@ -617,7 +617,7 @@ export function EMRView({ patientId, onClose, initialConsultationActive = false,
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-border bg-white p-4 shadow-sm lg:sticky lg:top-0">
+                <div className="citabox-card p-4 lg:sticky lg:top-0">
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Pieza seleccionada</p>

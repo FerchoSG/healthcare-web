@@ -4,10 +4,11 @@ import { useState, useEffect, useMemo, useCallback } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { CITABOX_DATA_CHANGED_EVENT } from "@/lib/data-events"
 import {
-  CLINIC_TIME_ZONE,
+  clinicLocalDateTimeToMs,
   formatClinicDateFromKey,
   formatClinicDateKey,
   getClinicTodayKey,
+  getClinicLocalSlot,
   parseClinicDateKey,
 } from "@/lib/clinic-time"
 import {
@@ -69,39 +70,11 @@ function toDateKey(d: Date): string {
 }
 
 function toClinicLocal(isoString: string): { dateKey: string; timeKey: string } {
-  const d = new Date(isoString)
-  const parts = new Intl.DateTimeFormat("es-CR", {
-    timeZone: CLINIC_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(d)
-  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "0"
-  const year = get("year")
-  const month = get("month")
-  const day = get("day")
-  const h = parseInt(get("hour")) % 24
-  const m = parseInt(get("minute"))
-  const slotMin = m < 15 ? 0 : m < 45 ? 30 : 0
-  const slotHr = m >= 45 ? (h === 23 ? 0 : h + 1) : h
-  return {
-    dateKey: `${year}-${month}-${day}`,
-    timeKey: `${String(slotHr).padStart(2, "0")}:${String(slotMin).padStart(2, "0")}`,
-  }
-}
-
-// Costa Rica = UTC-6, no DST
-function crLocalToUtcMs(dateKey: string, timeKey: string): number {
-  const [year, month, day] = dateKey.split("-").map(Number)
-  const [hour, minute] = timeKey.split(":").map(Number)
-  return Date.UTC(year, month - 1, day, hour + 6, minute, 0)
+  return getClinicLocalSlot(isoString)
 }
 
 function slotOverlapsBlock(dateKey: string, timeKey: string, block: TimeBlock): boolean {
-  const slotStart = crLocalToUtcMs(dateKey, timeKey)
+  const slotStart = clinicLocalDateTimeToMs(dateKey, timeKey)
   const slotEnd = slotStart + 30 * 60 * 1000
   const blockStart = new Date(block.start_time).getTime()
   const blockEnd = new Date(block.end_time).getTime()
@@ -232,7 +205,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
     if (!pendingSlot || !blockDoctorId.trim()) return
     setSaving(true)
     try {
-      const startMs = crLocalToUtcMs(pendingSlot.date, pendingSlot.time)
+      const startMs = clinicLocalDateTimeToMs(pendingSlot.date, pendingSlot.time)
       const endMs = startMs + 30 * 60 * 1000
       const block = await createTimeBlock({
         doctor_id: blockDoctorId.trim(),
@@ -301,18 +274,18 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col gap-4 p-4 lg:p-6 h-full overflow-y-auto">
+    <div className="flex h-full flex-col gap-5 overflow-y-auto rounded-[24px] bg-white/35 p-1 lg:p-2">
 
       {/* ── Main calendar card ───────────────────────────────────────────── */}
       <div
-        className="bg-white rounded-lg shadow-md border border-border flex flex-col overflow-hidden"
+        className="citabox-panel flex flex-col overflow-hidden"
         style={{ minHeight: "560px" }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 lg:px-6 py-4 border-b border-border shrink-0">
+        <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-4 lg:px-6">
           <div className="flex items-center gap-3">
-            <h3 className="text-sm font-bold text-foreground">Calendario semanal</h3>
-            <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-md hidden sm:inline">
+            <h3 className="text-base font-extrabold text-foreground">Calendario semanal</h3>
+            <span className="hidden rounded-[10px] bg-[var(--brand-navy-soft)] px-3 py-1 text-xs font-bold text-[var(--brand-navy)] sm:inline">
               {weekLabel}
             </span>
             {loading && (
@@ -322,19 +295,19 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setWeekOffset((o) => o - 1)}
-              className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-all"
+              className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-[var(--surface-soft)] text-muted-foreground transition-all hover:text-foreground"
             >
               <ChevronLeft size={14} />
             </button>
             <button
               onClick={() => setWeekOffset(0)}
-              className="px-4 py-1.5 rounded-md bg-foreground text-background text-xs font-semibold"
+              className="citabox-primary-gradient rounded-[12px] px-4 py-2 text-xs font-bold text-white"
             >
               Hoy
             </button>
             <button
               onClick={() => setWeekOffset((o) => o + 1)}
-              className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-all"
+              className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-[var(--surface-soft)] text-muted-foreground transition-all hover:text-foreground"
             >
               <ChevronRight size={14} />
             </button>
@@ -372,7 +345,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
                     return (
                       <button
                         key={apt.id}
-                        className="w-full flex items-center gap-3 p-3 rounded-lg bg-muted/40 border border-border mb-1.5 text-left hover:bg-muted/60 transition-all"
+                         className="mb-1.5 flex w-full items-center gap-3 rounded-[14px] border border-border bg-[var(--surface-soft)] p-3 text-left transition-all hover:bg-[var(--brand-navy-soft)]"
                         onClick={() => handleAppointmentClick(apt)}
                       >
                         <div className="flex-1 min-w-0">
@@ -389,7 +362,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
                 ) : (
                   <button
                     onClick={() => handleCellClick(dateKey, "09:00")}
-                    className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg border-2 border-dashed border-border text-xs text-muted-foreground hover:border-muted-foreground hover:bg-muted/40 transition-all mb-1.5"
+                     className="mb-1.5 flex w-full items-center justify-center gap-1.5 rounded-[14px] border-2 border-dashed border-border py-2.5 text-xs font-semibold text-muted-foreground transition-all hover:border-[var(--brand-navy)] hover:bg-[var(--brand-navy-soft)] hover:text-[var(--brand-navy)]"
                   >
                     + Agregar cita
                   </button>

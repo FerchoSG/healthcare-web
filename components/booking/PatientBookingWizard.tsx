@@ -130,7 +130,7 @@ function MiniCalendar({ selected, onSelect }: { selected: string; onSelect: (d: 
   const past = (d: number) => iso(d) < TODAY_KEY
 
   return (
-    <div className="rounded-lg bg-white border border-slate-100 shadow-md p-4">
+    <div className="citabox-card p-4">
       <div className="flex items-center justify-between mb-3">
         <button
           onClick={() => setVm(m => Math.max(m - 1, TODAY.getUTCMonth()))}
@@ -161,8 +161,8 @@ function MiniCalendar({ selected, onSelect }: { selected: string; onSelect: (d: 
               className={[
                 "w-8 h-8 mx-auto rounded-md text-xs font-semibold flex items-center justify-center transition-all",
                 isPast ? "text-slate-200 cursor-not-allowed"
-                : isSel ? "bg-[#008BB0] text-white shadow-md"
-                        : "text-slate-700 hover:bg-teal-50 hover:text-teal-700",
+                : isSel ? "bg-[var(--brand-navy)] text-white shadow-md"
+                        : "text-slate-700 hover:bg-[var(--brand-navy-soft)] hover:text-[var(--brand-navy)]",
               ].join(" ")}
             >{day}</button>
           )
@@ -209,7 +209,7 @@ function DoctorGrid({ doctors, selected, onSelect, compact = false, loading = fa
             <div
               className={[
                 "w-14 h-14 rounded-full flex items-center justify-center text-sm font-bold border-[3px] transition-all",
-                selected === doc.id ? "border-teal-600 scale-105 shadow-lg" : "border-transparent opacity-80 hover:opacity-100",
+                selected === doc.id ? "border-[var(--brand-navy)] scale-105 shadow-lg" : "border-transparent opacity-80 hover:opacity-100",
               ].join(" ")}
               style={{ backgroundColor: color, color: "#1e293b" }}
             >{initials}</div>
@@ -271,20 +271,20 @@ function ServiceList({ services, selected, onSelect, loading = false }: {
           className={[
             "w-full flex items-center gap-3.5 p-4 rounded-lg border-2 text-left transition-all active:scale-[.98]",
             selected === svc.id
-              ? "border-teal-600 bg-teal-50 shadow-md"
-              : "border-slate-100 bg-white hover:border-teal-200 hover:bg-teal-50/40 shadow-sm",
+              ? "border-[var(--brand-navy)] bg-[var(--brand-navy-soft)] shadow-md"
+              : "border-slate-100 bg-white hover:border-[var(--brand-navy)] hover:bg-[var(--brand-navy-soft)] shadow-sm",
           ].join(" ")}
         >
           <div className={[
             "w-11 h-11 rounded-md flex items-center justify-center shrink-0",
-            selected === svc.id ? "bg-[#008BB0] text-white" : "bg-slate-100 text-teal-700",
+            selected === svc.id ? "bg-[var(--brand-navy)] text-white" : "bg-[var(--brand-navy-soft)] text-[var(--brand-navy)]",
           ].join(" ")}>{getServiceIcon(svc.name)}</div>
           <div className="flex-1 min-w-0">
             <div className="font-bold text-slate-800 text-sm leading-tight">{svc.name}</div>
             <div className="text-xs text-slate-500 mt-0.5 leading-relaxed">{svc.description ?? ""}</div>
           </div>
           <div className="text-right shrink-0">
-            <div className="text-sm font-bold text-teal-700">{formatPrice(svc.price)}</div>
+            <div className="text-sm font-bold text-[var(--brand-navy)]">{formatPrice(svc.price)}</div>
             <div className="text-[10px] text-slate-400">{formatDuration(svc.duration_minutes)}</div>
           </div>
         </button>
@@ -329,8 +329,8 @@ function TimeSlotGrid({ slots, selected, onSelect, loading = false }: {
             className={[
               "py-2.5 rounded-md text-xs font-semibold transition-all active:scale-95",
               !slot.available ? "bg-slate-50 text-slate-300 cursor-not-allowed line-through"
-              : isSel  ? "bg-[#008BB0] text-white shadow-md"
-                       : "bg-white border border-slate-200 text-slate-700 hover:border-teal-400 hover:text-teal-700",
+              : isSel  ? "bg-[var(--brand-navy)] text-white shadow-md"
+                       : "bg-white border border-slate-200 text-slate-700 hover:border-[var(--brand-navy)] hover:text-[var(--brand-navy)]",
             ].join(" ")}
           >{formatSlotTime(slot.time)}</button>
         )
@@ -350,8 +350,8 @@ function StepPillBar({ step }: { step: number }) {
           <div key={label} className="flex items-center gap-1">
             <div className={[
               "text-[11px] font-semibold px-2.5 py-1 transition-all",
-              done    ? "bg-teal-100 text-teal-700"
-              : current ? "bg-[#008BB0] text-white"
+              done    ? "bg-[var(--brand-navy-soft)] text-[var(--brand-navy)]"
+              : current ? "bg-[var(--brand-navy)] text-white"
                         : "text-slate-400",
             ].join(" ")}>
               {done ? <Check size={10} className="inline" strokeWidth={3} /> : null} {label}
@@ -376,12 +376,12 @@ function DesktopStepNav({ step }: { step: number }) {
         return (
           <div key={label} className={[
             "flex items-center gap-3 px-4 py-3 transition-all",
-            current ? "bg-[#008BB0] text-white shadow-md" : done ? "text-teal-600" : "text-slate-400",
+            current ? "bg-[var(--brand-navy)] text-white shadow-md" : done ? "text-[var(--brand-navy)]" : "text-slate-400",
           ].join(" ")}>
             <div className={[
               "w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold shrink-0",
               current ? "bg-white/20 text-white"
-              : done  ? "bg-teal-100 text-teal-700"
+              : done  ? "bg-[var(--brand-navy-soft)] text-[var(--brand-navy)]"
                       : "bg-slate-100 text-slate-400",
             ].join(" ")}>
               {done ? <Check size={12} strokeWidth={3} /> : n}
@@ -398,14 +398,14 @@ function ClinicInfoCard({ doctors, clinic }: { doctors: DoctorSummary[]; clinic?
   const phone = clinic?.public_phone ?? clinic?.phone ?? "+506 2222-3344"
   const address = clinic?.address ?? "San Jose, Costa Rica"
   return (
-    <div className="rounded-lg bg-white border border-slate-100 shadow-md p-5">
+    <div className="citabox-card p-5">
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-md bg-[#008BB0] flex items-center justify-center shrink-0">
+        <div className="citabox-primary-gradient flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px]">
           <Smile size={18} className="text-white" />
         </div>
         <div>
           <div className="font-bold text-slate-800 text-sm">{clinic?.name ?? BRAND_NAME}</div>
-          <div className="text-xs text-teal-600 font-medium">Clínica verificada</div>
+          <div className="text-xs font-medium text-[var(--brand-navy)]">Clínica verificada</div>
         </div>
       </div>
       <div className="flex flex-col gap-2.5 text-xs text-slate-500">
@@ -443,7 +443,7 @@ function BookingSummaryCard({ booking, service, doctor }: {
 }) {
   if (!service) return null
   return (
-    <div className="rounded-lg bg-[#008BB0] text-white p-5 shadow-md">
+    <div className="citabox-primary-gradient rounded-[18px] p-5 text-white shadow-md">
       <div className="text-teal-200 text-[10px] font-bold uppercase tracking-widest mb-2">Tu selección</div>
       <div className="font-bold text-base mb-1">{service.name}</div>
       <div className="text-teal-200 text-xs mb-3">{formatDuration(service.duration_minutes)} · {formatPrice(service.price)}</div>
@@ -484,11 +484,11 @@ function SuccessScreen({ booking, confirmation, service, onHome }: {
         <p className="text-slate-500 text-sm leading-relaxed mb-1">
           Hemos enviado los detalles a tu WhatsApp.
         </p>
-        <p className="text-teal-700 font-bold text-sm mb-8">Te esperamos.</p>
+        <p className="mb-8 text-sm font-bold text-[var(--brand-navy)]">Te esperamos.</p>
 
         {/* Summary card */}
         <div className="w-full rounded-lg bg-slate-50 border border-slate-100 overflow-hidden mb-8 text-left">
-          <div className="bg-[#008BB0] px-5 py-4">
+          <div className="citabox-primary-gradient px-5 py-4">
             <div className="text-teal-200 text-xs font-semibold uppercase tracking-wider mb-0.5">Servicio</div>
             <div className="text-white font-bold text-base">{confirmation.service?.name ?? service?.name ?? "—"}</div>
             {service && (
@@ -512,7 +512,7 @@ function SuccessScreen({ booking, confirmation, service, onHome }: {
         </div>
 
         <div className="w-full flex flex-col gap-3">
-          <button className="w-full py-4 rounded-md border-2 border-teal-700 text-teal-700 font-bold text-sm flex items-center justify-center gap-2 hover:bg-teal-50 transition-all active:scale-[.98] shadow-sm">
+          <button className="flex w-full items-center justify-center gap-2 rounded-[12px] border-2 border-[var(--brand-navy)] py-4 text-sm font-bold text-[var(--brand-navy)] shadow-sm transition-all hover:bg-[var(--brand-navy-soft)] active:scale-[.98]">
             <CalendarPlus size={16} />
             Agregar al Calendario
           </button>
@@ -574,6 +574,7 @@ export function PatientBookingWizard({
   const update = (fields: Partial<BookingFormData>) => setBooking(b => ({ ...b, ...fields }))
   const next   = () => { setError(null); setStep(s => Math.min(s + 1, TOTAL)) }
   const back   = () => { setError(null); setStep(s => Math.max(s - 1, 1)) }
+  const sanitizeWhatsapp = (value: string) => value.replace(/\D/g, "").slice(0, 8)
 
   const selectedService = services.find(s => s.id === booking.serviceId)
   const selectedDoctor  = doctors.find(d => d.id === booking.doctorId)
@@ -583,9 +584,20 @@ export function PatientBookingWizard({
     let cancelled = false
     async function load() {
       try {
-        const svc = await getServices(clinicId)
+        const svc = await getServices(clinicId, booking.doctorId)
         if (!cancelled) {
           setServices(svc)
+          if (booking.serviceId && !svc.some(service => service.id === booking.serviceId)) {
+            setBooking(current => ({
+              ...current,
+              serviceId: "",
+              date: "",
+              time: "",
+            }))
+            setSlots([])
+            setResolvedDoctorId(null)
+            setStep(1)
+          }
         }
       } catch (err) {
         if (!cancelled) {
@@ -597,7 +609,7 @@ export function PatientBookingWizard({
     }
     load()
     return () => { cancelled = true }
-  }, [clinicId])
+  }, [clinicId, booking.doctorId, booking.serviceId])
 
   // ── Re-fetch doctors when a service is selected ─────────────────────────
   useEffect(() => {
@@ -647,7 +659,12 @@ export function PatientBookingWizard({
   }, [clinicId, booking.doctorId, booking.date, booking.serviceId])
 
   const canStep2 = !!(booking.date && booking.time)
-  const canStep3 = !!(booking.firstName && booking.lastName && booking.cedula && booking.whatsapp)
+  const canStep3 = !!(
+    booking.firstName &&
+    booking.lastName &&
+    booking.cedula &&
+    /^\d{8}$/.test(booking.whatsapp)
+  )
 
   const handleReservar = useCallback(async () => {
     setIsSubmitting(true)
@@ -769,13 +786,15 @@ export function PatientBookingWizard({
             <input
               id="whatsapp"
               type="tel"
-              placeholder="8888-0000"
+              inputMode="numeric"
+              pattern="[0-9]{8}"
+              placeholder="88880000"
               value={booking.whatsapp}
-              onChange={e => update({ whatsapp: e.target.value })}
+              onChange={e => update({ whatsapp: sanitizeWhatsapp(e.target.value) })}
               className="w-full pl-20 pr-4 py-3.5 rounded-md bg-white border border-slate-200 text-slate-800 text-sm placeholder:text-slate-300 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 transition-all shadow-sm"
             />
           </div>
-          <p className="text-[11px] text-slate-400 mt-1.5">Te enviaremos tu confirmación aquí</p>
+          <p className="text-[11px] text-slate-400 mt-1.5">Ingresa 8 dígitos. Te enviaremos tu confirmación aquí.</p>
         </div>
       </div>
     </div>
@@ -785,8 +804,8 @@ export function PatientBookingWizard({
     <div>
       <h2 className="text-xl font-bold text-slate-900 mb-1">Revisa los Detalles</h2>
       <p className="text-sm text-slate-500 mb-5">¿Todo se ve bien?</p>
-      <div className="rounded-lg bg-white shadow-md overflow-hidden border border-slate-100">
-        <div className="bg-[#008BB0] px-5 py-4">
+      <div className="overflow-hidden rounded-[18px] border border-slate-100 bg-white shadow-md">
+        <div className="citabox-primary-gradient px-5 py-4">
           <div className="text-teal-200 text-xs font-semibold uppercase tracking-wider mb-0.5">Servicio</div>
           <div className="text-white font-bold text-base">{selectedService?.name ?? "—"}</div>
           {selectedService && (
@@ -831,11 +850,11 @@ export function PatientBookingWizard({
         disabled={cfg.disabled || isSubmitting}
         onClick={cfg.action}
         className={[
-          "w-full py-4 rounded-md font-bold text-base transition-all active:scale-[.98] flex items-center justify-center gap-2 shadow-sm",
+          "flex w-full items-center justify-center gap-2 rounded-[14px] py-4 text-base font-bold shadow-sm transition-all active:scale-[.98]",
           step === 4 ? "text-lg py-5" : "",
           cfg.disabled || isSubmitting
             ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-            : "bg-[#008BB0] text-white shadow-lg shadow-[#008BB0]/20 hover:bg-[#007199]",
+            : "citabox-primary-gradient text-white shadow-lg shadow-blue-900/20 hover:brightness-95",
         ].join(" ")}
       >
         {isSubmitting ? (
@@ -851,7 +870,7 @@ export function PatientBookingWizard({
   const headerBar = (
     <div className="flex items-center justify-between mb-6 flex-shrink-0">
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-md bg-[#008BB0] flex items-center justify-center">
+        <div className="citabox-primary-gradient flex h-9 w-9 items-center justify-center rounded-[12px]">
           <Smile size={15} className="text-white" />
         </div>
         <span className="font-bold text-slate-800 text-sm">{clinic?.name ?? BRAND_NAME}</span>
@@ -871,9 +890,9 @@ export function PatientBookingWizard({
   // ── MOBILE LAYOUT ─────────────────────────────────────────────────────────
 
   const mobileView = (
-    <div className="md:hidden min-h-screen bg-slate-100 flex items-start justify-center pt-8 pb-16 px-4 font-sans">
-      <div className="w-full max-w-sm bg-slate-50 rounded-lg shadow-lg overflow-hidden flex flex-col" style={{ minHeight: 780 }}>
-        <div className="bg-slate-50/95 backdrop-blur-sm px-5 pt-5 pb-4 flex-shrink-0">
+    <div className="citabox-shell flex min-h-screen items-start justify-center px-4 pb-16 pt-8 font-sans md:hidden">
+      <div className="flex w-full max-w-sm flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_26px_80px_rgba(20,60,146,0.16)]" style={{ minHeight: 780 }}>
+        <div className="flex-shrink-0 bg-white/95 px-5 pb-4 pt-5 backdrop-blur-sm">
           {headerBar}
           <StepPillBar step={step} />
         </div>
@@ -893,7 +912,7 @@ export function PatientBookingWizard({
 
         {step > 1 && (
           <div className="sticky bottom-0">
-            <div className="px-5 pb-6 pt-4 bg-gradient-to-t from-slate-50 via-slate-50/95 to-transparent">
+            <div className="bg-gradient-to-t from-white via-white/95 to-transparent px-5 pb-6 pt-4">
               {renderCTA()}
             </div>
           </div>
@@ -905,15 +924,15 @@ export function PatientBookingWizard({
   // ── DESKTOP LAYOUT ────────────────────────────────────────────────────────
 
   const desktopView = (
-    <div className="hidden md:flex min-h-screen bg-slate-100 font-sans">
-      <aside className="w-64 shrink-0 bg-white border-r border-slate-100 flex flex-col px-5 py-8">
+    <div className="citabox-shell hidden min-h-screen font-sans md:flex">
+      <aside className="flex w-72 shrink-0 flex-col rounded-r-[28px] border-r border-white/70 bg-white/95 px-5 py-8 shadow-[18px_0_50px_rgba(20,60,146,0.07)]">
         <div className="flex items-center gap-3 mb-10">
-          <div className="w-10 h-10 rounded-md bg-[#008BB0] flex items-center justify-center">
+          <div className="citabox-primary-gradient flex h-11 w-11 items-center justify-center rounded-[14px]">
             <Smile size={18} className="text-white" />
           </div>
           <div>
             <div className="font-bold text-slate-800 text-sm leading-tight">{clinic?.name ?? BRAND_NAME}</div>
-            <div className="text-teal-600 font-semibold text-xs">Reservas</div>
+            <div className="text-xs font-semibold text-[var(--brand-navy)]">Reservas</div>
           </div>
         </div>
 
@@ -928,7 +947,7 @@ export function PatientBookingWizard({
       <main className="flex-1 overflow-y-auto p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Agendar una Cita</h1>
+            <h1 className="text-2xl font-extrabold text-foreground">Agendar una cita</h1>
             <p className="text-sm text-slate-500 mt-0.5">{clinic?.name ?? BRAND_NAME}{clinic?.address ? ` - ${clinic.address}` : ""}</p>
           </div>
           <div className="flex items-center gap-3">
@@ -952,11 +971,11 @@ export function PatientBookingWizard({
 
         {step === 1 && (
           <div className="grid grid-cols-3 gap-5">
-            <div className="col-span-2 bg-white rounded-lg shadow-md border border-slate-100 p-6">
+            <div className="citabox-panel col-span-2 p-6">
               {serviceStepContent}
             </div>
             <div className="flex flex-col gap-5">
-              <div className="bg-white rounded-lg shadow-md border border-slate-100 p-6">
+              <div className="citabox-panel p-6">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Elige un profesional</p>
                 <DoctorGrid doctors={doctors} loading={initialLoading} selected={booking.doctorId} onSelect={id => update({ doctorId: id })} compact />
               </div>
@@ -968,13 +987,13 @@ export function PatientBookingWizard({
         {step === 2 && (
           <div className="grid grid-cols-3 gap-5">
             <div className="col-span-1 flex flex-col gap-5">
-              <div className="bg-white rounded-lg shadow-md border border-slate-100 p-6">
+              <div className="citabox-panel p-6">
                 <h2 className="text-lg font-bold text-slate-900 mb-1">Selecciona una Fecha</h2>
                 <p className="text-xs text-slate-500 mb-4">Elige el día que mejor te convenga</p>
                 <MiniCalendar selected={booking.date} onSelect={d => update({ date: d, time: "" })} />
               </div>
             </div>
-            <div className="col-span-2 bg-white rounded-lg shadow-md border border-slate-100 p-6 flex flex-col">
+            <div className="citabox-panel col-span-2 flex flex-col p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-1">Horarios Disponibles</h2>
               <p className="text-xs text-slate-500 mb-5">
                 {booking.date ? `Espacios para ${formatDateShort(booking.date)}` : "Selecciona una fecha primero"}
@@ -990,7 +1009,7 @@ export function PatientBookingWizard({
 
         {step === 3 && (
           <div className="grid grid-cols-3 gap-5">
-            <div className="col-span-2 bg-white rounded-lg shadow-md border border-slate-100 p-8">
+            <div className="citabox-panel col-span-2 p-8">
               {infoStepContent}
               <div className="mt-6">{renderCTA()}</div>
             </div>
@@ -1003,7 +1022,7 @@ export function PatientBookingWizard({
 
         {step === 4 && (
           <div className="grid grid-cols-3 gap-5">
-            <div className="col-span-2 bg-white rounded-lg shadow-md border border-slate-100 p-8">
+            <div className="citabox-panel col-span-2 p-8">
               {reviewStepContent}
               <div className="mt-6">{renderCTA()}</div>
             </div>

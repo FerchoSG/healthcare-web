@@ -20,9 +20,11 @@ export function getPublicClinic(slug: string): Promise<PublicClinic> {
 /**
  * Fetch the list of active services for a clinic.
  */
-export function getServices(clinicId: string): Promise<ServiceSummary[]> {
+export function getServices(clinicId: string, doctorId?: string): Promise<ServiceSummary[]> {
+  const params = new URLSearchParams({ clinic_id: clinicId });
+  if (doctorId && doctorId !== "any") params.set("doctor_id", doctorId);
   return api.get<ServiceSummary[]>(
-    `/booking/services?clinic_id=${encodeURIComponent(clinicId)}`,
+    `/booking/services?${params.toString()}`,
     SKIP_AUTH,
   );
 }

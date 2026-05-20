@@ -260,31 +260,35 @@ export function SettingsView() {
   const inactiveCount = staff.filter((member) => member.is_active === false || Boolean(member.deleted_at)).length
 
   return (
-    <div className="flex flex-col gap-4 p-4 lg:p-6 h-full overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-md border border-border overflow-hidden flex-1">
-        <div className="px-6 pt-6 pb-0 border-b border-border">
-          <h2 className="text-base font-bold text-foreground mb-4">Configuración</h2>
+    <div className="citabox-settings h-full overflow-y-auto rounded-[24px] bg-white/40">
+      <div className="min-h-full rounded-[24px] border border-white/70 bg-white/82 shadow-[0_24px_70px_rgba(20,60,146,0.08)] backdrop-blur">
+        <div className="border-b border-border px-6 pb-0 pt-6">
+          <div className="mb-5 flex flex-col gap-1">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brand-navy)]">Administración</p>
+            <h2 className="text-2xl font-extrabold tracking-tight text-foreground">Configuración</h2>
+          </div>
           <Tabs defaultValue="clinic">
-            <TabsList className="mb-0 bg-transparent border-b-0 p-0 gap-1">
-              <TabsTrigger value="clinic" className="rounded-t-xl rounded-b-none px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-foreground transition-all">
+            <TabsList className="mb-0 gap-2 rounded-none border-b-0 bg-transparent p-0">
+              <TabsTrigger value="clinic" className="rounded-t-[14px] rounded-b-none border-b-2 border-transparent px-5 py-3 text-sm font-bold transition-all data-[state=active]:border-[var(--brand-navy)] data-[state=active]:bg-[var(--brand-navy-soft)] data-[state=active]:text-[var(--brand-navy)] data-[state=active]:shadow-none">
                 Perfil de clínica
               </TabsTrigger>
-              <TabsTrigger value="staff" className="rounded-t-xl rounded-b-none px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-foreground transition-all">
+              <TabsTrigger value="staff" className="rounded-t-[14px] rounded-b-none border-b-2 border-transparent px-5 py-3 text-sm font-bold transition-all data-[state=active]:border-[var(--brand-navy)] data-[state=active]:bg-[var(--brand-navy-soft)] data-[state=active]:text-[var(--brand-navy)] data-[state=active]:shadow-none">
                 Equipo
               </TabsTrigger>
-              <TabsTrigger value="services" className="rounded-t-xl rounded-b-none px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-foreground transition-all">
+              <TabsTrigger value="services" className="rounded-t-[14px] rounded-b-none border-b-2 border-transparent px-5 py-3 text-sm font-bold transition-all data-[state=active]:border-[var(--brand-navy)] data-[state=active]:bg-[var(--brand-navy-soft)] data-[state=active]:text-[var(--brand-navy)] data-[state=active]:shadow-none">
                 Servicios
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="clinic" className="p-4 sm:p-6 mt-0">
+            <TabsContent value="clinic" className="mt-0 p-4 sm:p-6">
               {loadingClinic ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 size={16} className="animate-spin" />
                   Cargando clínica...
                 </div>
               ) : (
-                <div className="max-w-lg flex flex-col gap-5">
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,720px)_minmax(320px,1fr)]">
+                  <div className="citabox-card flex flex-col gap-5 p-6">
                   {error && <p className="text-sm text-red-600">{error}</p>}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -404,18 +408,46 @@ export function SettingsView() {
                     Habilitar booking en línea
                   </label>
 
-                  <div className="rounded-lg border border-border bg-muted/40 p-4 text-xs text-muted-foreground">
+                  <div className="rounded-[14px] border border-border bg-[var(--surface-soft)] p-4 text-xs text-muted-foreground">
                     El dominio sugerido para v1 es <span className="font-semibold text-foreground">{BRAND_DOMAIN}</span>. El soporte operativo se centraliza en <span className="font-semibold text-foreground">{BRAND_SUPPORT_EMAIL}</span>.
                   </div>
 
                   <button
                     onClick={handleSaveClinic}
                     disabled={savingClinic}
-                    className="w-fit px-6 py-2.5 rounded-md text-sm font-semibold transition-all text-white disabled:opacity-50"
-                    style={{ backgroundColor: saved ? "var(--neon-green)" : "var(--foreground)", color: saved ? "white" : "var(--background)" }}
+                    className="citabox-primary-gradient w-fit rounded-[12px] px-6 py-2.5 text-sm font-bold text-white transition-all hover:brightness-95 disabled:opacity-50"
                   >
                     {savingClinic ? "Guardando..." : saved ? "Guardado" : "Guardar cambios"}
                   </button>
+                  </div>
+
+                  <aside className="flex flex-col gap-4">
+                    <div className="citabox-primary-gradient rounded-[20px] p-5 text-white shadow-lg shadow-blue-900/10">
+                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/70">Clínica activa</p>
+                      <h3 className="mt-3 text-2xl font-extrabold">{clinic.name || "Clínica"}</h3>
+                      <p className="mt-2 text-sm text-white/72">{clinic.address || "Dirección pendiente"}</p>
+                    </div>
+                    <div className="citabox-card p-5">
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Estado público</p>
+                      <div className="mt-4 grid gap-3">
+                        <div className="flex items-center justify-between rounded-[14px] bg-[var(--surface-soft)] px-4 py-3">
+                          <span className="text-sm font-semibold text-foreground">Booking</span>
+                          <span className={`rounded-[10px] px-2.5 py-1 text-xs font-bold ${clinic.bookingEnabled ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+                            {clinic.bookingEnabled ? "Activo" : "Inactivo"}
+                          </span>
+                        </div>
+                        <div className="rounded-[14px] bg-[var(--surface-soft)] px-4 py-3">
+                          <p className="text-xs font-semibold text-muted-foreground">Contacto público</p>
+                          <p className="mt-1 text-sm font-bold text-foreground">{clinic.publicPhone || "Sin teléfono"}</p>
+                          <p className="text-xs text-muted-foreground">{clinic.publicEmail || "Sin correo"}</p>
+                        </div>
+                        <div className="rounded-[14px] bg-[var(--brand-coral-soft)] px-4 py-3">
+                          <p className="text-xs font-semibold text-[var(--brand-coral)]">Módulos habilitados</p>
+                          <p className="mt-1 text-lg font-extrabold text-foreground">{clinic.specialtyModules.length}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </aside>
                 </div>
               )}
             </TabsContent>

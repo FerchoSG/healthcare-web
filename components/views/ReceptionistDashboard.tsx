@@ -256,10 +256,10 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 lg:p-6 h-full overflow-y-auto">
+    <div className="flex h-full flex-col gap-5 overflow-y-auto rounded-[24px] bg-white/35 p-1 lg:p-2">
       {/* Top strip */}
       {billingWarning && (
-        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">
+        <div className="flex items-start gap-3 rounded-[14px] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 shadow-sm">
           <AlertCircle size={16} className="mt-0.5 shrink-0" />
           <div>
             <p className="text-sm font-semibold">Cobros manuales no disponibles</p>
@@ -268,9 +268,9 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-card rounded-lg shadow-md p-4 border border-border flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="citabox-card flex items-center gap-3 p-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--brand-navy-soft)] text-[var(--brand-navy)]">
             <Clock size={16} className="text-muted-foreground" />
           </div>
           <div>
@@ -280,8 +280,8 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
             </p>
           </div>
         </div>
-        <div className="bg-white dark:bg-card rounded-lg shadow-md p-4 border border-border flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: "var(--neon-green-bg)" }}>
+        <div className="citabox-card flex items-center gap-3 p-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--brand-navy-soft)]">
             <CheckCircle size={16} style={{ color: "var(--neon-green)" }} />
           </div>
           <div>
@@ -289,8 +289,8 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
             <p className="text-xl font-extrabold text-foreground">{completed.length}</p>
           </div>
         </div>
-        <div className="bg-white dark:bg-card rounded-lg shadow-md p-4 border border-border flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+        <div className="citabox-card flex items-center gap-3 p-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--brand-coral-soft)] text-[var(--brand-coral)]">
             <DollarSign size={16} className="text-muted-foreground" />
           </div>
           <div>
@@ -300,9 +300,9 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1">
+      <div className="grid flex-1 grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Today's Queue */}
-        <div className="lg:col-span-2 bg-white dark:bg-card rounded-lg shadow-md p-5 border border-border flex flex-col">
+        <div className="citabox-panel flex flex-col p-5 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-foreground">
               Agenda del {formatDateLabel(selectedDate)}
@@ -310,7 +310,7 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
             <div className="flex items-center gap-2">
               <button
                 onClick={() => shiftDate(-1)}
-                className="w-8 h-8 flex items-center justify-center rounded-md border border-border hover:bg-muted transition-all"
+                className="flex h-9 w-9 items-center justify-center rounded-[12px] border border-border bg-card transition-all hover:bg-[var(--brand-navy-soft)]"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -318,17 +318,17 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
                 type="date"
                 value={selectedDate}
                 onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-                className="text-xs border border-border rounded-md px-2 py-1.5 bg-transparent text-foreground focus:outline-none focus:ring-2 focus:ring-ring/40"
+                className="rounded-[12px] border border-border bg-[var(--surface-soft)] px-2 py-1.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-ring/40"
               />
               <button
                 onClick={() => shiftDate(1)}
-                className="w-8 h-8 flex items-center justify-center rounded-md border border-border hover:bg-muted transition-all"
+                className="flex h-9 w-9 items-center justify-center rounded-[12px] border border-border bg-card transition-all hover:bg-[var(--brand-navy-soft)]"
               >
                 <ChevronRight size={16} />
               </button>
               <button
                 onClick={() => setSelectedDate(getClinicTodayKey())}
-                className="text-xs font-semibold px-2.5 py-1.5 rounded-md border border-border hover:bg-muted transition-all"
+                className="rounded-[12px] border border-border bg-card px-2.5 py-1.5 text-xs font-bold transition-all hover:bg-[var(--brand-navy-soft)]"
               >
                 Hoy
               </button>
@@ -363,9 +363,9 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
                 const isMutating = mutatingId === apt.id
 
                 return (
-                  <div key={apt.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                  <div key={apt.id} className="flex items-center gap-3 rounded-[14px] border border-transparent px-2 py-2 transition-colors hover:border-border hover:bg-[var(--surface-soft)]">
                     <div
-                      className="w-9 h-9 rounded-md flex items-center justify-center text-white text-[11px] font-bold shrink-0 cursor-pointer hover:opacity-80 transition-all"
+                      className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-[12px] text-[11px] font-bold text-white transition-all hover:opacity-80"
                       style={{ backgroundColor: color }}
                       onClick={() => onOpenEMR(apt.patient_id)}
                       title="Abrir expediente"
@@ -388,7 +388,7 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
                         value={apt.status}
                         onChange={(e) => handleStatusChange(apt.id, e.target.value as AppointmentStatus)}
                         disabled={isMutating}
-                        className={`text-[11px] font-semibold px-3 py-1.5 rounded-md border-0 outline-none cursor-pointer focus:ring-2 focus:ring-ring/40 transition-all ${isMutating ? "opacity-30" : ""} ${statusColors[apt.status] || "text-muted-foreground bg-muted"}`}
+                        className={`cursor-pointer rounded-[10px] border-0 px-3 py-1.5 text-[11px] font-bold outline-none transition-all focus:ring-2 focus:ring-ring/40 ${isMutating ? "opacity-30" : ""} ${statusColors[apt.status] || "text-muted-foreground bg-muted"}`}
                       >
                         {STATUS_OPTIONS.map((s) => (
                           <option key={s} value={s}>{STATUS_LABELS[s]}</option>
@@ -405,19 +405,19 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
         {/* Right column: Actions + Pending Checkouts */}
         <div className="flex flex-col gap-4">
           {/* Quick Actions */}
-          <div className="bg-white dark:bg-card rounded-lg shadow-md p-5 border border-border">
+          <div className="citabox-panel p-5">
             <h3 className="text-sm font-bold text-foreground mb-4">Acciones rápidas</h3>
             <div className="flex flex-col gap-3">
               <button
                 onClick={onNewAppointment}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-md bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-all"
+                className="citabox-primary-gradient flex w-full items-center justify-center gap-2 rounded-[12px] py-3 text-sm font-bold text-white transition-all hover:brightness-95"
               >
                 <CalendarPlus size={16} />
                 Nueva cita
               </button>
               <button
                 onClick={onWalkIn}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-md text-sm font-semibold border-2 border-foreground text-foreground hover:bg-foreground hover:text-background transition-all"
+                className="flex w-full items-center justify-center gap-2 rounded-[12px] border-2 border-[var(--brand-navy)] py-3 text-sm font-bold text-[var(--brand-navy)] transition-all hover:bg-[var(--brand-navy)] hover:text-white"
               >
                 <UserPlus size={16} />
                 Paciente sin cita
@@ -426,7 +426,7 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
           </div>
 
           {/* Pending Checkouts */}
-          <div className="bg-white dark:bg-card rounded-lg shadow-md p-5 border border-border flex-1">
+          <div className="citabox-panel flex-1 p-5">
             <h3 className="text-sm font-bold text-foreground mb-3">Pendientes de cierre</h3>
             {pendingClosures.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-4">No hay cierres pendientes.</p>
@@ -436,7 +436,7 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
                   const invoice = invoicesByAppointmentId.get(apt.id)
                   const isClosing = closingId === apt.id
                   return (
-                  <div key={apt.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <div key={apt.id} className="flex items-center justify-between rounded-[12px] border-b border-border px-2 py-2 last:border-0 hover:bg-[var(--surface-soft)]">
                     <div>
                       <p className="text-xs font-semibold text-foreground">
                         {apt.patient.first_name} {apt.patient.last_name}
@@ -451,7 +451,7 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
                     <button
                       onClick={() => openCheckout(apt)}
                       disabled={isClosing}
-                      className="text-[10px] font-semibold px-2.5 py-1 rounded-md bg-foreground text-background hover:opacity-80 transition-all disabled:opacity-50"
+                      className="rounded-[10px] bg-[var(--brand-navy)] px-2.5 py-1 text-[10px] font-bold text-white transition-all hover:bg-[var(--brand-navy-hover)] disabled:opacity-50"
                     >
                       {isClosing ? "Registrando..." : invoice ? "Editar cobro" : "Registrar cobro"}
                     </button>

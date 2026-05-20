@@ -14,5 +14,7 @@ next.user-config.*
 # Common ignores
 node_modules/
 .next/
+playwright-report/
+test-results/
 .DS_Store
 .vercel

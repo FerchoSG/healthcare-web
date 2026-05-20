@@ -28,7 +28,7 @@ export function CalendarCell({
       <div className="relative border-l border-border" style={{ minHeight: "28px" }}>
         <button
           type="button"
-          className="absolute inset-0 m-0.5 flex items-center overflow-hidden rounded-md px-2 transition-opacity hover:opacity-80"
+          className="absolute inset-0 m-0.5 flex items-center overflow-hidden rounded-[10px] px-2 transition-opacity hover:opacity-80"
           style={{
             background:
               "repeating-linear-gradient(45deg,#fee2e2,#fee2e2 5px,#fecaca 5px,#fecaca 10px)",
@@ -63,7 +63,7 @@ export function CalendarCell({
       onClick={() => onClickEmpty(date, time)}
     >
       <div
-        className="absolute inset-0.5 flex items-center justify-center rounded-md border-2 border-dashed border-transparent opacity-0 transition-all group-hover:border-border group-hover:bg-muted/30 group-hover:opacity-100"
+        className="absolute inset-0.5 flex items-center justify-center rounded-[10px] border-2 border-dashed border-transparent opacity-0 transition-all group-hover:border-[var(--brand-navy)] group-hover:bg-[var(--brand-navy-soft)] group-hover:opacity-100"
       >
         <Plus size={11} className="text-muted-foreground" />
       </div>

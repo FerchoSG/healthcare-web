@@ -164,10 +164,10 @@ function MetricCard({
   icon: React.ReactNode
 }) {
   return (
-    <div className="rounded-md border border-border bg-card p-4 shadow-sm">
+    <div className="citabox-card p-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[var(--brand-navy-soft)] text-[var(--brand-navy)]">
           {icon}
         </div>
       </div>
@@ -191,7 +191,7 @@ function Panel({
   className?: string
 }) {
   return (
-    <section className={`rounded-md border border-border bg-card shadow-sm ${className}`}>
+    <section className={`citabox-panel overflow-hidden ${className}`}>
       <div className="flex min-h-14 items-center justify-between gap-3 border-b border-border px-4">
         <div className="min-w-0">
           <h2 className="truncate text-sm font-semibold text-foreground">{title}</h2>
@@ -252,12 +252,12 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
   const appointmentsToday = state.kpis?.appointments_today ?? state.appointments.length
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-background">
-      <div className="flex flex-col gap-4 p-4 lg:p-6">
+    <div className="flex h-full flex-col overflow-y-auto rounded-[24px] bg-white/35 dark:bg-[color-mix(in_srgb,var(--background)_70%,transparent)]">
+      <div className="flex flex-col gap-5 p-1 lg:p-2">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs font-medium text-muted-foreground">{formatClinicDateFromKey(getClinicTodayKey(), { weekday: "long", month: "long", day: "numeric" })}</p>
-            <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">Panel administrativo</h1>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brand-navy)]">{formatClinicDateFromKey(getClinicTodayKey(), { weekday: "long", month: "long", day: "numeric" })}</p>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-foreground">Dashboard de CitaBox</h1>
           </div>
           <div className="flex items-center gap-3">
             {lastUpdated && (
@@ -268,7 +268,7 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
             <button
               onClick={loadDashboard}
               disabled={loading}
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-xs font-semibold text-foreground shadow-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-[12px] border border-border bg-card px-3 text-xs font-bold text-foreground shadow-sm transition-colors hover:bg-[var(--brand-navy-soft)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
               Actualizar
@@ -283,7 +283,7 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
             label="Citas"
             value={loading ? "..." : String(appointmentsToday)}
@@ -310,7 +310,7 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
           />
         </div>
 
-        <div className="grid min-h-[390px] grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(360px,1fr)]">
+        <div className="grid min-h-[390px] grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(360px,1fr)]">
           <Panel title="Ingresos" meta="Últimos 14 días" action={<span className="text-xs font-medium text-muted-foreground">CRC</span>}>
             <div className="h-[314px] px-2 py-5">
               <ResponsiveContainer width="100%" height="100%">
@@ -354,7 +354,7 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
               <p className="py-20 text-center text-xs text-muted-foreground">No hay citas programadas para hoy.</p>
             ) : (
               <div className="overflow-hidden">
-                <div className="grid grid-cols-[72px_minmax(0,1fr)_96px] border-b border-border bg-muted/40 px-4 py-2 text-[11px] font-semibold uppercase text-muted-foreground">
+                <div className="grid grid-cols-[72px_minmax(0,1fr)_96px] border-b border-border bg-[var(--surface-soft)] px-4 py-2 text-[11px] font-bold uppercase text-muted-foreground">
                   <span>Hora</span>
                   <span>Paciente</span>
                   <span className="text-right">Estado</span>
@@ -373,7 +373,7 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
                             {appointment.reason ?? appointment.service?.name ?? "Cita"}
                           </p>
                         </div>
-                        <span className={`inline-flex items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-semibold ${meta.className}`}>
+                          <span className={`inline-flex items-center justify-center gap-1.5 rounded-[8px] px-2 py-1 text-[10px] font-bold ${meta.className}`}>
                           <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
                           {meta.label}
                         </span>
@@ -386,14 +386,14 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
           </Panel>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(360px,0.95fr)_minmax(0,1.15fr)]">
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(360px,0.95fr)_minmax(0,1.15fr)]">
           <Panel
             title="Pacientes recientes"
             meta="Registros más nuevos"
             action={
               <button
                 onClick={onViewPatients}
-                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted"
+                className="inline-flex items-center gap-1 rounded-[10px] px-2 py-1 text-xs font-bold text-[var(--brand-navy)] hover:bg-[var(--brand-navy-soft)]"
               >
                 Ver todos
                 <ArrowRight size={13} />
@@ -412,7 +412,7 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
                 {state.patients.map((patient) => (
                   <div key={patient.id} className="flex items-center gap-3 px-4 py-3">
                     <div
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[11px] font-semibold text-white"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] text-[11px] font-bold text-white"
                       style={{ backgroundColor: getAvatarColor(patient) }}
                     >
                       {getInitials(patient)}

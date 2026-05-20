@@ -3,12 +3,12 @@
 import type { Appointment } from "@/types/api"
 
 const APT_COLORS = [
-  "#008BB0",
-  "#4ECDC4",
-  "#45B7D1",
-  "#96CEB4",
-  "#DDA0DD",
-  "#FF6B6B",
+  "#143C92",
+  "#2D7DD2",
+  "#4BADEA",
+  "#18A058",
+  "#7C3AED",
+  "#FF766D",
 ]
 
 /** Deterministic color from appointment id so the same appointment always gets
@@ -32,8 +32,8 @@ export function CalendarEvent({ appointment, onClick }: CalendarEventProps) {
 
   return (
     <button
-      className="absolute inset-0.5 rounded-md px-2 py-1 text-white text-[10px] font-semibold
-        leading-tight hover:opacity-90 active:opacity-80 transition-all shadow-sm text-left
+      className="absolute inset-0.5 rounded-[10px] px-2 py-1 text-white text-[10px] font-semibold
+        leading-tight hover:opacity-90 active:opacity-80 transition-all shadow-md text-left
         flex flex-col overflow-hidden"
       style={{ backgroundColor: color }}
       onClick={(e) => {

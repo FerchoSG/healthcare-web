@@ -1,9 +1,25 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { type Role, type AuthUser, type View } from "@/lib/store"
+import { type AuthUser, type Role, type View } from "@/lib/store"
 import { useTheme } from "next-themes"
-import { Search, Bell, Plus, Sun, Moon, User, Settings, LogOut, Calendar, UserPlus, Menu, Shield, Stethoscope, ClipboardList, Building2 } from "lucide-react"
+import {
+  Bell,
+  Building2,
+  Calendar,
+  ClipboardList,
+  LogOut,
+  Menu,
+  Moon,
+  Plus,
+  Search,
+  Settings,
+  Shield,
+  Stethoscope,
+  Sun,
+  User,
+  UserPlus,
+} from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,11 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 interface TopHeaderProps {
   role: Role
@@ -31,9 +43,15 @@ interface TopHeaderProps {
 const NOTIFICATIONS: Array<{ id: number; text: string; sub: string; unread: boolean }> = []
 
 const titleByRole: Record<Role, string> = {
-  admin: "Panel",
+  admin: "Panel administrativo",
   receptionist: "Recepción",
   doctor: "Mi agenda",
+}
+
+const subtitleByRole: Record<Role, string> = {
+  admin: "Resumen operativo de la clínica",
+  receptionist: "Cola de pacientes y cobros del día",
+  doctor: "Consultas y expedientes clínicos",
 }
 
 const roleIcons: Record<Role, React.ReactNode> = {
@@ -73,61 +91,59 @@ export function TopHeader({
     .slice(0, 2)
     .toUpperCase()
 
-  const email = authUser.email
   const displayRole = authUser.role === "SUPER_ADMIN" ? "Superadministrador" : roleLabels[role]
 
   return (
-    <header className="h-[64px] shrink-0 flex items-center justify-between px-4 lg:px-6 bg-background border-b border-border">
-      <div className="flex items-center gap-3">
+    <header className="mx-0 mb-3 flex min-h-[76px] shrink-0 items-center justify-between rounded-[22px] border border-white/70 bg-white/88 px-4 shadow-[0_18px_45px_rgba(20,60,146,0.08)] backdrop-blur dark:border-[var(--border)] dark:bg-[color-mix(in_srgb,var(--card)_92%,transparent)] lg:px-5">
+      <div className="flex min-w-0 items-center gap-3">
         <button
           onClick={onMenuClick}
-          className="lg:hidden w-9 h-9 rounded-md bg-foreground text-background flex items-center justify-center hover:opacity-90 transition-all shadow-sm"
+          className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--brand-navy)] text-white shadow-sm transition-all hover:bg-[var(--brand-navy-hover)] lg:hidden"
           aria-label="Abrir menú de navegación"
         >
-          <Menu size={16} />
+          <Menu size={17} />
         </button>
-        <h1 className="text-sm lg:text-base font-bold text-foreground">{titleByRole[role]}</h1>
+        <div className="min-w-0">
+          <h1 className="truncate text-lg font-extrabold tracking-tight text-foreground lg:text-xl">{titleByRole[role]}</h1>
+          <p className="hidden truncate text-xs font-medium text-muted-foreground sm:block">{subtitleByRole[role]}</p>
+        </div>
       </div>
 
-      <div className="hidden md:flex flex-1 max-w-sm mx-6">
-        <div className="relative w-full">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+      <div className="hidden flex-1 justify-center px-5 xl:flex">
+        <div className="relative w-full max-w-md">
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Buscar en la plataforma..."
-            className="w-full pl-8 pr-4 py-2 rounded-md text-sm bg-muted text-foreground placeholder:text-muted-foreground border-0 outline-none focus:ring-2 focus:ring-ring/40 transition-all shadow-sm"
+            placeholder="Buscar pacientes, citas o servicios"
+            className="h-11 w-full rounded-[14px] border border-border bg-[var(--surface-soft)] pl-10 pr-4 text-sm font-medium text-foreground shadow-inner outline-none transition-all placeholder:text-muted-foreground focus:border-[var(--brand-navy)] focus:ring-4 focus:ring-[var(--brand-navy-soft)]"
           />
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 lg:gap-2.5">
+      <div className="flex items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3 rounded-md bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-all shadow-sm">
-              <Building2 size={13} />
-              <span className="hidden lg:inline">
-                {authUser.membership?.clinic_name ?? "Elegir clínica"}
-              </span>
+            <button className="hidden h-10 items-center gap-2 rounded-[12px] border border-border bg-card px-3 text-xs font-bold text-foreground shadow-sm transition-all hover:bg-[var(--brand-navy-soft)] md:flex">
+              <Building2 size={14} className="text-[var(--brand-navy)]" />
+              <span className="max-w-[170px] truncate">{authUser.membership?.clinic_name ?? "Elegir clínica"}</span>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52 rounded-lg p-1.5">
-            <div className="px-3 py-2 mb-1">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Cambiar clínica</p>
+          <DropdownMenuContent align="end" className="w-60 rounded-[16px] p-2">
+            <div className="px-3 py-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Cambiar clínica</p>
             </div>
             {authUser.memberships.map((membership) => (
               <DropdownMenuItem
                 key={membership.clinic_id}
                 onClick={() => onClinicSwitch(membership.clinic_id)}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium cursor-pointer ${
-                  authUser.membership?.clinic_id === membership.clinic_id ? "bg-foreground text-background" : ""
+                className={`flex cursor-pointer items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-sm font-semibold ${
+                  authUser.membership?.clinic_id === membership.clinic_id ? "bg-[var(--brand-navy)] text-white" : ""
                 }`}
               >
                 <Building2 size={14} />
                 <span className="truncate">{membership.clinic_name}</span>
                 {authUser.membership?.clinic_id === membership.clinic_id && (
-                  <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-background/20">
-                    Activa
-                  </span>
+                  <span className="ml-auto rounded-[8px] bg-white/18 px-1.5 py-0.5 text-[10px] font-bold">Activa</span>
                 )}
               </DropdownMenuItem>
             ))}
@@ -142,30 +158,24 @@ export function TopHeader({
         <button
           onClick={() => setTheme(isDark ? "light" : "dark")}
           aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-          className="w-9 h-9 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-all shadow-sm"
+          className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-border bg-card text-muted-foreground shadow-sm transition-all hover:bg-[var(--brand-navy-soft)] hover:text-[var(--brand-navy)]"
         >
-          {mounted && isDark ? <Sun size={15} /> : <Moon size={15} />}
+          {mounted && isDark ? <Sun size={16} /> : <Moon size={16} />}
         </button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-1.5 px-2.5 lg:px-4 py-2 rounded-md bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-all shadow-sm">
-              <Plus size={14} />
+            <button className="citabox-primary-gradient flex h-10 items-center gap-2 rounded-[12px] px-3 text-xs font-bold text-white shadow-md shadow-blue-900/10 transition-all hover:brightness-95 lg:px-4">
+              <Plus size={15} />
               <span className="hidden lg:inline">Crear</span>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 rounded-lg p-1.5">
-            <DropdownMenuItem
-              onClick={onNewAppointment}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium cursor-pointer"
-            >
+          <DropdownMenuContent align="end" className="w-52 rounded-[16px] p-2">
+            <DropdownMenuItem onClick={onNewAppointment} className="flex cursor-pointer items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-sm font-semibold">
               <Calendar size={14} />
               Nueva cita
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={onNewPatient}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium cursor-pointer"
-            >
+            <DropdownMenuItem onClick={onNewPatient} className="flex cursor-pointer items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-sm font-semibold">
               <UserPlus size={14} />
               Nuevo paciente
             </DropdownMenuItem>
@@ -174,95 +184,48 @@ export function TopHeader({
 
         <Popover>
           <PopoverTrigger asChild>
-            <button className="w-9 h-9 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-all relative shadow-sm">
-              <Bell size={15} />
+            <button className="relative flex h-10 w-10 items-center justify-center rounded-[12px] border border-border bg-card text-muted-foreground shadow-sm transition-all hover:bg-[var(--brand-navy-soft)] hover:text-[var(--brand-navy)]">
+              <Bell size={16} />
               {NOTIFICATIONS.some((item) => item.unread) && (
-                <span
-                  className="absolute top-1.5 right-1.5 w-2 h-2 rounded-sm"
-                  style={{ backgroundColor: "var(--neon-green)" }}
-                />
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[var(--brand-coral)]" />
               )}
             </button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-80 rounded-lg p-0 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <PopoverContent align="end" className="w-80 overflow-hidden rounded-[18px] p-0">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <p className="text-sm font-bold text-foreground">Notificaciones</p>
-              <span className="text-[10px] font-medium text-muted-foreground">
+              <span className="text-[10px] font-semibold text-muted-foreground">
                 {NOTIFICATIONS.filter((item) => item.unread).length} nuevas
               </span>
             </div>
-            <div className="flex flex-col">
-              {NOTIFICATIONS.length === 0 ? (
-                <div className="px-4 py-8 text-center text-xs text-muted-foreground">
-                  No hay notificaciones.
-                </div>
-              ) : (
-                NOTIFICATIONS.map((n) => (
-                  <div
-                    key={n.id}
-                    className={`flex items-start gap-3 px-4 py-3 border-b border-border last:border-0 transition-colors hover:bg-muted/60 cursor-pointer ${
-                      n.unread ? "bg-muted/30" : ""
-                    }`}
-                  >
-                    <div
-                      className="w-2 h-2 rounded-sm mt-1.5 shrink-0"
-                      style={{
-                        backgroundColor: n.unread ? "var(--neon-green)" : "transparent",
-                        border: n.unread ? "none" : "1.5px solid var(--border)",
-                      }}
-                    />
-                    <div>
-                      <p className="text-xs font-semibold text-foreground">{n.text}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{n.sub}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-            <div className="px-4 py-2.5 border-t border-border">
-              <button className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors w-full text-center">
-                Cerrar
-              </button>
-            </div>
+            <div className="px-4 py-8 text-center text-xs text-muted-foreground">No hay notificaciones.</div>
           </PopoverContent>
         </Popover>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button
-              className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 hover:opacity-90 transition-all"
-              style={{ backgroundColor: "#3ECF62" }}
-            >
+            <button className="citabox-coral-gradient flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-extrabold text-white shadow-md shadow-red-900/10 transition-all hover:brightness-95">
               {initials}
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52 rounded-lg p-1.5">
-            <div className="px-3 py-2.5 mb-1">
-              <p className="text-xs font-bold text-foreground">{authUser.name}</p>
-              <p className="text-[10px] text-muted-foreground">{email}</p>
+          <DropdownMenuContent align="end" className="w-60 rounded-[16px] p-2">
+            <div className="px-3 py-2.5">
+              <p className="text-sm font-bold text-foreground">{authUser.name}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{authUser.email}</p>
             </div>
             <DropdownMenuSeparator className="my-1" />
-            <DropdownMenuItem
-              onClick={() => onViewChange("settings")}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium cursor-pointer"
-            >
+            <DropdownMenuItem onClick={() => onViewChange("settings")} className="flex cursor-pointer items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-sm font-semibold">
               <User size={14} />
               Mi perfil
             </DropdownMenuItem>
             {role === "admin" && (
-              <DropdownMenuItem
-                onClick={() => onViewChange("settings")}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium cursor-pointer"
-              >
+              <DropdownMenuItem onClick={() => onViewChange("settings")} className="flex cursor-pointer items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-sm font-semibold">
                 <Settings size={14} />
                 Configuración
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator className="my-1" />
-            <DropdownMenuItem
-              onClick={onLogout}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium cursor-pointer text-destructive focus:text-destructive"
-            >
+            <DropdownMenuItem onClick={onLogout} className="flex cursor-pointer items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-sm font-semibold text-red-600">
               <LogOut size={14} />
               Cerrar sesión
             </DropdownMenuItem>

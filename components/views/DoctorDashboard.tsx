@@ -121,9 +121,9 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 lg:p-6 h-full overflow-y-auto">
+    <div className="flex h-full flex-col gap-5 overflow-y-auto rounded-[24px] bg-white/35 p-1 lg:p-2">
       {/* Greeting */}
-      <div className="bg-white dark:bg-card rounded-lg shadow-md p-6 border border-border">
+      <div className="citabox-panel p-6">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-1">{todayStr}</p>
@@ -137,8 +137,7 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
             </p>
           </div>
           <div
-            className="w-16 h-16 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: "var(--neon-green-bg)" }}
+            className="flex h-16 w-16 items-center justify-center rounded-[18px] bg-[var(--brand-navy-soft)]"
           >
             <Stethoscope size={28} style={{ color: "var(--neon-green)" }} />
           </div>
@@ -146,14 +145,14 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
       </div>
 
       {/* Stats strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
           { label: "Pacientes de hoy", value: String(appointments.length), icon: <User size={14} /> },
           { label: "En progreso", value: String(activeCount), icon: <Clock size={14} /> },
           { label: "Completadas", value: String(appointments.filter((a) => a.status === AppointmentStatus.COMPLETED).length), icon: <FileText size={14} /> },
         ].map((stat) => (
-          <div key={stat.label} className="bg-white dark:bg-card rounded-lg shadow-md p-4 border border-border flex items-center gap-3">
-            <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center text-muted-foreground">
+          <div key={stat.label} className="citabox-card flex items-center gap-3 p-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--brand-navy-soft)] text-[var(--brand-navy)]">
               {stat.icon}
             </div>
             <div>
@@ -182,7 +181,7 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
 
       {/* Appointment Cards Grid */}
       {!loading && !error && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {appointments.length === 0 && (
             <p className="text-sm text-muted-foreground col-span-2 text-center py-8">No hay citas para hoy.</p>
           )}
@@ -199,14 +198,14 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
             return (
               <div
                 key={apt.id}
-                className={`bg-white dark:bg-card rounded-lg shadow-md p-5 border flex flex-col gap-3 transition-all ${
-                  isActive ? "border-[var(--neon-green)] shadow-sm" : "border-border"
+                className={`citabox-card flex flex-col gap-3 p-5 transition-all ${
+                  isActive ? "ring-2 ring-[var(--brand-navy)]" : ""
                 }`}
               >
                 {/* Header */}
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-10 h-10 rounded-md flex items-center justify-center text-white text-xs font-bold"
+                    className="flex h-11 w-11 items-center justify-center rounded-[14px] text-xs font-bold text-white"
                     style={{ backgroundColor: color }}
                   >
                     {initials}
@@ -216,7 +215,7 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
                     <p className="text-xs text-muted-foreground">{apt.patient?.identification ?? ""}</p>
                   </div>
                   <span
-                    className={`text-[10px] font-semibold px-2.5 py-1 rounded-md ${badge.cls}`}
+                    className={`rounded-[8px] px-2.5 py-1 text-[10px] font-bold ${badge.cls}`}
                     style={badge.style}
                   >
                     {badge.label}
@@ -241,7 +240,7 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
                     <>
                       <button
                         onClick={() => onOpenEMR(apt.patient_id, { consultationActive: true, appointmentId: apt.id })}
-                        className="flex-1 py-2.5 rounded-md text-xs font-semibold border-2 transition-all hover:bg-muted"
+                        className="flex-1 rounded-[12px] border-2 py-2.5 text-xs font-bold transition-all hover:bg-[var(--brand-navy-soft)]"
                         style={{ borderColor: "var(--neon-green)", color: "var(--neon-green)" }}
                       >
                         Abrir expediente
@@ -249,7 +248,7 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
                       <button
                         onClick={() => handleEndConsultation(apt)}
                         disabled={isMutating}
-                        className="flex-1 py-2.5 rounded-md bg-red-500 text-white text-xs font-semibold hover:bg-red-600 transition-all disabled:opacity-60 flex items-center justify-center gap-1"
+                        className="flex flex-1 items-center justify-center gap-1 rounded-[12px] bg-red-500 py-2.5 text-xs font-bold text-white transition-all hover:bg-red-600 disabled:opacity-60"
                       >
                         {isMutating && <Loader2 size={12} className="animate-spin" />}
                         Finalizar consulta
@@ -259,7 +258,7 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
                     <button
                       onClick={() => handleStartConsultation(apt)}
                       disabled={isMutating || apt.status === AppointmentStatus.COMPLETED || apt.status === AppointmentStatus.CANCELLED}
-                      className="w-full py-2.5 rounded-md bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-60 flex items-center justify-center gap-1"
+                      className="citabox-primary-gradient flex w-full items-center justify-center gap-1 rounded-[12px] py-2.5 text-xs font-bold text-white transition-all hover:brightness-95 disabled:opacity-60"
                     >
                       {isMutating && <Loader2 size={12} className="animate-spin" />}
                       Iniciar consulta

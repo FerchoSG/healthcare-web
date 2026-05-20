@@ -209,7 +209,7 @@ export function ServicesManagementView() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[#008BB0]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--brand-navy)]" />
         <span className="ml-2 text-sm text-slate-500">Cargando servicios...</span>
       </div>
     )
@@ -223,7 +223,7 @@ export function ServicesManagementView() {
         <button
           type="button"
           onClick={load}
-          className="rounded-md bg-[#008BB0] px-4 py-2 text-xs font-semibold text-white transition-all hover:opacity-90"
+          className="citabox-primary-gradient rounded-[12px] px-4 py-2 text-xs font-bold text-white transition-all hover:brightness-95"
         >
           Reintentar
         </button>
@@ -243,7 +243,7 @@ export function ServicesManagementView() {
         <button
           type="button"
           onClick={openCreate}
-          className="flex w-fit items-center gap-2 rounded-md bg-[#008BB0] px-4 py-2 text-xs font-semibold text-white transition-all hover:opacity-90"
+          className="citabox-primary-gradient flex w-fit items-center gap-2 rounded-[12px] px-4 py-2 text-xs font-bold text-white transition-all hover:brightness-95"
         >
           <Plus size={14} />
           Nuevo servicio
@@ -257,7 +257,7 @@ export function ServicesManagementView() {
           placeholder="Buscar servicios..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-md border border-slate-200 bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-all focus:border-[#008BB0] focus:ring-2 focus:ring-[#008BB0]/30"
+          className="w-full rounded-[12px] border border-slate-200 bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-all focus:border-[var(--brand-navy)] focus:ring-2 focus:ring-[var(--brand-navy-soft)]"
         />
       </div>
 
@@ -338,7 +338,7 @@ export function ServicesManagementView() {
                       <button
                         type="button"
                         onClick={() => openEdit(service)}
-                        className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-slate-500 transition-all hover:bg-cyan-50 hover:text-[#008BB0]"
+                        className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-slate-100 text-slate-500 transition-all hover:bg-[var(--brand-navy-soft)] hover:text-[var(--brand-navy)]"
                         title="Editar"
                       >
                         <Pencil size={12} />
@@ -385,7 +385,7 @@ export function ServicesManagementView() {
                 value={form.name}
                 onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="Ej. Consulta general"
-                className="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-[#008BB0] focus:ring-2 focus:ring-[#008BB0]/30"
+                className="w-full rounded-[12px] border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-[var(--brand-navy)] focus:ring-2 focus:ring-[var(--brand-navy-soft)]"
               />
             </div>
 
@@ -396,7 +396,7 @@ export function ServicesManagementView() {
                 onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
                 placeholder="Descripción breve del servicio"
                 rows={2}
-                className="w-full resize-none rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-[#008BB0] focus:ring-2 focus:ring-[#008BB0]/30"
+                className="w-full resize-none rounded-[12px] border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-[var(--brand-navy)] focus:ring-2 focus:ring-[var(--brand-navy-soft)]"
               />
             </div>
 
@@ -412,7 +412,7 @@ export function ServicesManagementView() {
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, duration_minutes: parseInt(e.target.value, 10) || 0 }))
                   }
-                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-[#008BB0] focus:ring-2 focus:ring-[#008BB0]/30"
+                  className="w-full rounded-[12px] border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-[var(--brand-navy)] focus:ring-2 focus:ring-[var(--brand-navy-soft)]"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -426,7 +426,7 @@ export function ServicesManagementView() {
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, price: parseInt(e.target.value, 10) || 0 }))
                   }
-                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-[#008BB0] focus:ring-2 focus:ring-[#008BB0]/30"
+                  className="w-full rounded-[12px] border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-[var(--brand-navy)] focus:ring-2 focus:ring-[var(--brand-navy-soft)]"
                 />
               </div>
             </div>
@@ -455,7 +455,7 @@ export function ServicesManagementView() {
                       <div className="flex min-w-0 items-center gap-2">
                         <div
                           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
-                          style={{ backgroundColor: "#008BB0" }}
+                          style={{ backgroundColor: "var(--brand-navy)" }}
                         >
                           {doctor.first_name[0]}
                           {doctor.last_name[0]}
@@ -474,7 +474,7 @@ export function ServicesManagementView() {
                 )}
               </div>
               {form.doctor_ids.length > 0 && (
-                <p className="text-[11px] font-medium text-[#008BB0]">
+                <p className="text-[11px] font-medium text-[var(--brand-navy)]">
                   {form.doctor_ids.length} doctor{form.doctor_ids.length !== 1 ? "es" : ""} seleccionado{form.doctor_ids.length !== 1 ? "s" : ""}
                 </p>
               )}
@@ -494,7 +494,7 @@ export function ServicesManagementView() {
               type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="flex items-center gap-2 rounded-md bg-[#008BB0] px-5 py-2 text-xs font-semibold text-white transition-all hover:opacity-90 disabled:opacity-60"
+              className="citabox-primary-gradient flex items-center gap-2 rounded-[12px] px-5 py-2 text-xs font-bold text-white transition-all hover:brightness-95 disabled:opacity-60"
             >
               {submitting && <Loader2 size={13} className="animate-spin" />}
               {editingService ? "Guardar cambios" : "Crear servicio"}

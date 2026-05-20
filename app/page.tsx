@@ -104,7 +104,7 @@ export default function App() {
   // Show a loading spinner while we check if the token is still valid
   if (authLoading) {
     return (
-      <div className="flex h-screen items-center justify-center font-sans" style={{ backgroundColor: "var(--app-bg)" }}>
+      <div className="citabox-shell flex h-screen items-center justify-center font-sans">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-foreground border-t-transparent" />
       </div>
     )
@@ -150,7 +150,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden font-sans" style={{ backgroundColor: "var(--app-bg)" }}>
+    <div className="citabox-shell flex h-screen overflow-hidden font-sans">
       <Sidebar
         role={role}
         authUser={authUser}
@@ -162,7 +162,7 @@ export default function App() {
         onMobileClose={() => setMobileNavOpen(false)}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden px-3 py-3 lg:px-5 lg:py-4">
         <TopHeader
           role={role}
           authUser={authUser}
