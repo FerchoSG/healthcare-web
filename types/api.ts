@@ -201,8 +201,8 @@ export interface Patient {
   first_name: string;
   last_name: string;
   identification: string;
-  birth_date: string;
-  gender: Gender;
+  birth_date: string | null;
+  gender: Gender | null;
   whatsapp_phone: string | null;
   emergency_contact: Record<string, unknown> | null;
   createdAt: string;

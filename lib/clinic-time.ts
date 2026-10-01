@@ -130,7 +130,8 @@ export function addMinutesToIso(iso: string, minutes: number) {
   return new Date(new Date(iso).getTime() + minutes * 60 * 1000).toISOString()
 }
 
-export function getClinicAgeFromBirthDate(birthDate: string) {
+export function getClinicAgeFromBirthDate(birthDate: string | null) {
+  if (!birthDate) return null
   const birth = new Date(birthDate)
   const todayKey = getClinicTodayKey()
   const today = parseClinicDateKey(todayKey)

@@ -152,7 +152,7 @@ export function PatientsView({ onOpenEMR }: PatientsViewProps) {
     }
   }
 
-  const getAge = (birthDate: string) => {
+  const getAge = (birthDate: string | null) => {
     return getClinicAgeFromBirthDate(birthDate)
   }
 

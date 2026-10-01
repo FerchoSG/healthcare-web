@@ -44,7 +44,7 @@ export default function App() {
     }
     fetchMe()
       .then((me) => {
-        let activeMe = me
+        const activeMe = me
         if (!activeMe.active_membership && activeMe.memberships.length > 0) {
           const storedClinic = getClinicId() ?? activeMe.memberships[0].clinic_id
           setClinicId(storedClinic)

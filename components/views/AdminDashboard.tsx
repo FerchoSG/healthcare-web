@@ -108,14 +108,6 @@ function formatDate(value: string) {
   return formatClinicDateFromKey(value, { month: "short", day: "numeric" })
 }
 
-function formatFullDate(value: Date) {
-  return formatClinicDateFromKey(formatClinicDateKey(value), {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  })
-}
-
 function getInitials(patient: Patient) {
   return `${patient.first_name[0] ?? ""}${patient.last_name[0] ?? ""}`.toUpperCase()
 }

@@ -120,13 +120,15 @@ function getServiceIcon(name: string): React.ReactNode {
 
 function MiniCalendar({ selected, onSelect }: { selected: string; onSelect: (d: string) => void }) {
   const [vm, setVm] = useState(TODAY.getUTCMonth())
-  const vy = TODAY.getUTCFullYear()
+  const viewDate = new Date(Date.UTC(TODAY.getUTCFullYear(), vm, 1, 12))
+  const vy = viewDate.getUTCFullYear()
+  const month = viewDate.getUTCMonth()
 
-  const firstDay    = new Date(Date.UTC(vy, vm, 1, 12)).getUTCDay()
-  const daysInMonth = new Date(Date.UTC(vy, vm + 1, 0, 12)).getUTCDate()
-  const label       = formatClinicDateFromKey(`${vy}-${String(vm + 1).padStart(2,"0")}-01`, { month: "long", year: "numeric" })
+  const firstDay    = new Date(Date.UTC(vy, month, 1, 12)).getUTCDay()
+  const daysInMonth = new Date(Date.UTC(vy, month + 1, 0, 12)).getUTCDate()
+  const label       = formatClinicDateFromKey(`${vy}-${String(month + 1).padStart(2,"0")}-01`, { month: "long", year: "numeric" })
   const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
-  const iso  = (d: number) => `${vy}-${String(vm + 1).padStart(2,"0")}-${String(d).padStart(2,"0")}`
+  const iso  = (d: number) => `${vy}-${String(month + 1).padStart(2,"0")}-${String(d).padStart(2,"0")}`
   const past = (d: number) => iso(d) < TODAY_KEY
 
   return (
@@ -134,11 +136,13 @@ function MiniCalendar({ selected, onSelect }: { selected: string; onSelect: (d: 
       <div className="flex items-center justify-between mb-3">
         <button
           onClick={() => setVm(m => Math.max(m - 1, TODAY.getUTCMonth()))}
+          aria-label="Mes anterior"
           className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all"
         ><ChevronLeft size={14} /></button>
         <span className="text-sm font-bold text-slate-800">{label}</span>
         <button
           onClick={() => setVm(m => m + 1)}
+          aria-label="Mes siguiente"
           className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all"
         ><ChevronRight size={14} /></button>
       </div>
@@ -156,6 +160,7 @@ function MiniCalendar({ selected, onSelect }: { selected: string; onSelect: (d: 
           return (
             <button
               key={key}
+              aria-label={`Seleccionar ${key}`}
               disabled={isPast}
               onClick={() => onSelect(key)}
               className={[
@@ -465,6 +470,33 @@ function SuccessScreen({ booking, confirmation, service, onHome }: {
   service: ServiceSummary | undefined
   onHome: () => void
 }) {
+  const downloadReminder = () => {
+    const icsDate = (value: string) => new Date(value).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")
+    const escapeText = (value: string) => value.replace(/\\/g, "\\\\").replace(/,/g, "\\,").replace(/;/g, "\\;").replace(/\n/g, "\\n")
+    const content = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//CitaBox//Solicitud de cita//ES",
+      "BEGIN:VEVENT",
+      `UID:${confirmation.id}@citabox`,
+      `DTSTAMP:${icsDate(new Date().toISOString())}`,
+      `DTSTART:${icsDate(confirmation.start_time)}`,
+      `DTEND:${icsDate(confirmation.end_time)}`,
+      `SUMMARY:${escapeText(`Solicitud pendiente: ${confirmation.service?.name ?? service?.name ?? "Consulta"}`)}`,
+      "DESCRIPTION:La clínica debe confirmar esta solicitud antes de asistir.",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n")
+    const url = URL.createObjectURL(new Blob([content], { type: "text/calendar;charset=utf-8" }))
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `solicitud-cita-${booking.date}.ics`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 1_000)
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-12 font-sans">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-100 p-10 flex flex-col items-center text-center">
@@ -480,11 +512,11 @@ function SuccessScreen({ booking, confirmation, service, onHome }: {
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold text-slate-900 mb-2 text-balance">¡Cita Confirmada!</h1>
+        <h1 className="text-3xl font-bold text-slate-900 mb-2 text-balance">¡Solicitud de cita recibida!</h1>
         <p className="text-slate-500 text-sm leading-relaxed mb-1">
-          Hemos enviado los detalles a tu WhatsApp.
+          La clínica revisará tu solicitud. Podés consultar el estado por sus canales de contacto.
         </p>
-        <p className="mb-8 text-sm font-bold text-[var(--brand-navy)]">Te esperamos.</p>
+        <p className="mb-8 text-sm font-bold text-[var(--brand-navy)]">Guardá los detalles de tu solicitud.</p>
 
         {/* Summary card */}
         <div className="w-full rounded-lg bg-slate-50 border border-slate-100 overflow-hidden mb-8 text-left">
@@ -512,9 +544,9 @@ function SuccessScreen({ booking, confirmation, service, onHome }: {
         </div>
 
         <div className="w-full flex flex-col gap-3">
-          <button className="flex w-full items-center justify-center gap-2 rounded-[12px] border-2 border-[var(--brand-navy)] py-4 text-sm font-bold text-[var(--brand-navy)] shadow-sm transition-all hover:bg-[var(--brand-navy-soft)] active:scale-[.98]">
+          <button onClick={downloadReminder} className="flex w-full items-center justify-center gap-2 rounded-[12px] border-2 border-[var(--brand-navy)] py-4 text-sm font-bold text-[var(--brand-navy)] shadow-sm transition-all hover:bg-[var(--brand-navy-soft)] active:scale-[.98]">
             <CalendarPlus size={16} />
-            Agregar al Calendario
+            Descargar recordatorio
           </button>
           <button
             onClick={onHome}
@@ -794,7 +826,7 @@ export function PatientBookingWizard({
               className="w-full pl-20 pr-4 py-3.5 rounded-md bg-white border border-slate-200 text-slate-800 text-sm placeholder:text-slate-300 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 transition-all shadow-sm"
             />
           </div>
-          <p className="text-[11px] text-slate-400 mt-1.5">Ingresa 8 dígitos. Te enviaremos tu confirmación aquí.</p>
+          <p className="text-[11px] text-slate-400 mt-1.5">Ingresa 8 dígitos para que la clínica pueda contactarte.</p>
         </div>
       </div>
     </div>
@@ -829,7 +861,7 @@ export function PatientBookingWizard({
         </div>
       </div>
       <p className="text-xs text-center text-slate-400 mt-4 leading-relaxed">
-        Al confirmar aceptas nuestra política de cancelación. Puedes cancelar o reprogramar hasta 2 horas antes.
+        La clínica revisará la solicitud y te indicará cómo confirmar, cancelar o reprogramar la cita.
       </p>
     </div>
   )
