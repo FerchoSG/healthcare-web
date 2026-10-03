@@ -72,7 +72,7 @@ function getDoctorInitials(doc: DoctorSummary): string {
 }
 
 function formatPrice(price: number): string {
-  return `₡${price.toLocaleString("es-CR")}`
+  return new Intl.NumberFormat("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 2 }).format(price / 100)
 }
 
 function formatDuration(minutes: number): string {
