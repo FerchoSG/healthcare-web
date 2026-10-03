@@ -31,14 +31,14 @@ interface SidebarProps {
 
 const navConfig: Record<Role, { icon: React.ReactNode; label: string; view: View }[]> = {
   admin: [
-    { icon: <LayoutDashboard size={18} />, label: "Panel", view: "dashboard" },
-    { icon: <Calendar size={18} />, label: "Calendario", view: "calendar" },
+    { icon: <LayoutDashboard size={18} />, label: "Hoy", view: "dashboard" },
+    { icon: <Calendar size={18} />, label: "Agenda", view: "calendar" },
     { icon: <Users size={18} />, label: "Pacientes", view: "patients" },
     { icon: <Settings size={18} />, label: "Configuración", view: "settings" },
   ],
   receptionist: [
     { icon: <ClipboardList size={18} />, label: "Recepción", view: "front-desk" },
-    { icon: <Calendar size={18} />, label: "Calendario", view: "calendar" },
+    { icon: <Calendar size={18} />, label: "Agenda", view: "calendar" },
     { icon: <Users size={18} />, label: "Pacientes", view: "patients" },
   ],
   doctor: [
@@ -91,21 +91,21 @@ function SidebarContent({
     <TooltipProvider delayDuration={0}>
       <div className="flex h-full flex-col px-3 py-5">
         <div className={cn("mb-8 flex items-center gap-3 px-3", collapsed && "justify-center px-0")}>
-          <div className="citabox-primary-gradient flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] shadow-md shadow-blue-900/10">
-            <Activity size={16} className="text-white" strokeWidth={2.5} />
+          <div className="citabox-action flex h-10 w-10 shrink-0 items-center justify-center rounded-md  ">
+            <Activity size={16} className="text-primary-foreground" strokeWidth={2.5} />
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <span className="block text-base font-extrabold tracking-tight text-foreground">{BRAND_NAME}</span>
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Clínica SaaS
+              <span className="block text-base font-semibold tracking-tight text-foreground">{BRAND_NAME}</span>
+              <span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Gestión clínica
               </span>
             </div>
           )}
         </div>
 
         <nav className="flex flex-1 flex-col gap-1">
-          {!collapsed && <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Menú</p>}
+          {!collapsed && <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Menú</p>}
           {navItems.map((item) => {
             const isActive = activeView === item.view
             const button = (
@@ -113,10 +113,10 @@ function SidebarContent({
                 key={item.view}
                 onClick={() => handleNav(item.view)}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 text-sm font-semibold transition-all",
+                  "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold transition-all",
                   isActive
-                    ? "citabox-primary-gradient text-white shadow-md shadow-blue-900/10"
-                    : "text-muted-foreground hover:bg-[var(--brand-navy-soft)] hover:text-[var(--brand-navy)]",
+                    ? "bg-accent text-primary border-l-2 border-primary"
+                    : "text-muted-foreground hover:bg-[var(--ds-action-soft)] hover:text-[var(--ds-action)]",
                   collapsed && "mx-auto h-11 w-11 justify-center px-0",
                 )}
               >
@@ -145,7 +145,7 @@ function SidebarContent({
                   href={bookingHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mx-auto mt-1 flex h-11 w-11 items-center justify-center rounded-[12px] text-sm font-semibold text-muted-foreground transition-all hover:bg-[var(--brand-navy-soft)] hover:text-[var(--brand-navy)]"
+                  className="mx-auto mt-1 flex h-11 w-11 items-center justify-center rounded-md text-sm font-semibold text-muted-foreground transition-all hover:bg-[var(--ds-action-soft)] hover:text-[var(--ds-action)]"
                 >
                   <ExternalLink size={18} />
                 </a>
@@ -160,7 +160,7 @@ function SidebarContent({
                 href={bookingHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-1 flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-all hover:bg-[var(--brand-navy-soft)] hover:text-[var(--brand-navy)]"
+                className="mt-1 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-all hover:bg-[var(--ds-action-soft)] hover:text-[var(--ds-action)]"
               >
                 <ExternalLink size={18} />
                 Reservas
@@ -169,7 +169,7 @@ function SidebarContent({
                 href={portalHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-all hover:bg-[var(--brand-navy-soft)] hover:text-[var(--brand-navy)]"
+                className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-all hover:bg-[var(--ds-action-soft)] hover:text-[var(--ds-action)]"
               >
                 <ExternalLink size={18} />
                 Portal del paciente
@@ -182,7 +182,7 @@ function SidebarContent({
           <button
             onClick={onToggleCollapse}
             className={cn(
-              "mb-2 flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-xs font-semibold text-muted-foreground transition-all hover:bg-[var(--brand-navy-soft)] hover:text-[var(--brand-navy)]",
+              "mb-2 flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-muted-foreground transition-all hover:bg-[var(--ds-action-soft)] hover:text-[var(--ds-action)]",
               collapsed && "mx-auto h-10 w-10 justify-center px-0",
             )}
           >
@@ -193,17 +193,17 @@ function SidebarContent({
         <div className="mt-auto">
           <div
             className={cn(
-              "citabox-soft flex cursor-pointer items-center gap-2.5 rounded-[14px] px-3 py-2.5 transition-all hover:bg-[var(--brand-navy-soft)]",
+              "citabox-soft flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-2.5 transition-all hover:bg-[var(--ds-action-soft)]",
               collapsed && "justify-center px-0",
             )}
           >
-            <div className="citabox-coral-gradient flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white">
+            <div className="citabox-secondary flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-primary">
               {initials}
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-bold text-foreground">{authUser.name}</p>
-                <p className="truncate text-[10px] text-muted-foreground">{displayRole}</p>
+                <p className="truncate text-xs font-semibold text-foreground">{authUser.name}</p>
+                <p className="truncate text-xs text-muted-foreground">{displayRole}</p>
               </div>
             )}
           </div>
@@ -227,8 +227,8 @@ export function Sidebar({
     <>
       <aside
         className={cn(
-          "hidden h-full shrink-0 flex-col rounded-r-[28px] border-r border-white/70 bg-sidebar/95 shadow-[18px_0_50px_rgba(20,60,146,0.07)] backdrop-blur transition-all duration-300 lg:flex",
-          collapsed ? "w-[78px]" : "w-[242px]",
+          "hidden h-full shrink-0 flex-col border-r border-border bg-sidebar transition-all duration-150 lg:flex",
+          collapsed ? "w-[72px]" : "w-[224px]",
         )}
       >
         <SidebarContent
@@ -242,7 +242,7 @@ export function Sidebar({
       </aside>
 
       <Sheet open={mobileOpen} onOpenChange={(o) => !o && onMobileClose?.()}>
-        <SheetContent side="left" className="w-[280px] rounded-r-[24px] p-0" aria-describedby={undefined}>
+        <SheetContent side="left" className="w-[280px] p-0" aria-describedby={undefined}>
           <SheetHeader className="sr-only">
             <SheetTitle>Menú de navegación</SheetTitle>
             <SheetDescription>Navegación principal de {BRAND_NAME}</SheetDescription>

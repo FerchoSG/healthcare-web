@@ -209,8 +209,8 @@ export function ServicesManagementView() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[var(--brand-navy)]" />
-        <span className="ml-2 text-sm text-slate-500">Cargando servicios...</span>
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--ds-action)]" />
+        <span className="ml-2 text-sm text-muted-foreground">Cargando servicios...</span>
       </div>
     )
   }
@@ -218,12 +218,12 @@ export function ServicesManagementView() {
   if (error) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3">
-        <AlertCircle className="h-8 w-8 text-red-500" />
-        <p className="text-sm text-red-600">{error}</p>
+        <AlertCircle className="h-8 w-8 text-danger" />
+        <p className="text-sm text-danger">{error}</p>
         <button
           type="button"
           onClick={load}
-          className="citabox-primary-gradient rounded-[12px] px-4 py-2 text-xs font-bold text-white transition-all hover:brightness-95"
+          className="citabox-action rounded-md px-4 py-2 text-xs font-semibold text-primary-foreground transition-all hover:brightness-95"
         >
           Reintentar
         </button>
@@ -235,7 +235,7 @@ export function ServicesManagementView() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-sm font-bold text-foreground">Catálogo de servicios</h3>
+          <h3 className="text-sm font-semibold text-foreground">Catálogo de servicios</h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {services.length} servicio{services.length !== 1 ? "s" : ""} configurado{services.length !== 1 ? "s" : ""}
           </p>
@@ -243,7 +243,7 @@ export function ServicesManagementView() {
         <button
           type="button"
           onClick={openCreate}
-          className="citabox-primary-gradient flex w-fit items-center gap-2 rounded-[12px] px-4 py-2 text-xs font-bold text-white transition-all hover:brightness-95"
+          className="citabox-action flex w-fit items-center gap-2 rounded-md px-4 py-2 text-xs font-semibold text-primary-foreground transition-all hover:brightness-95"
         >
           <Plus size={14} />
           Nuevo servicio
@@ -251,24 +251,24 @@ export function ServicesManagementView() {
       </div>
 
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
           placeholder="Buscar servicios..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-[12px] border border-slate-200 bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-all focus:border-[var(--brand-navy)] focus:ring-2 focus:ring-[var(--brand-navy-soft)]"
+          className="w-full rounded-md border border-input bg-card py-2.5 pl-9 pr-4 text-sm outline-none transition-all focus:border-[var(--ds-action)] focus:ring-2 focus:ring-[var(--ds-action-soft)]"
         />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-md">
+      <div className="overflow-x-auto rounded-lg border border-border bg-card ">
         <table className="w-full min-w-[700px] text-sm">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50/60">
+            <tr className="border-b border-border bg-card">
               {["Servicio", "Duración", "Precio", "Doctores", "Estado", ""].map((heading) => (
                 <th
                   key={heading}
-                  className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                  className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                 >
                   {heading}
                 </th>
@@ -278,7 +278,7 @@ export function ServicesManagementView() {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-5 py-10 text-center text-sm text-slate-400">
+                <td colSpan={6} className="px-5 py-10 text-center text-sm text-muted-foreground">
                   {search ? "No hay servicios que coincidan con la búsqueda." : "Aún no hay servicios. Crea el primero."}
                 </td>
               </tr>
@@ -286,25 +286,25 @@ export function ServicesManagementView() {
               filtered.map((service) => (
                 <tr
                   key={service.id}
-                  className="border-b border-slate-100 transition-all last:border-0 hover:bg-slate-50/50"
+                  className="border-b border-border transition-all last:border-0 hover:bg-card"
                 >
                   <td className="px-5 py-3.5">
                     <div className="flex flex-col gap-0.5">
                       <span className="text-xs font-semibold text-foreground">{service.name}</span>
                       {service.description && (
-                        <span className="line-clamp-1 text-[11px] text-slate-400">{service.description}</span>
+                        <span className="line-clamp-1 text-xs text-muted-foreground">{service.description}</span>
                       )}
                     </div>
                   </td>
                   <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                      <Clock size={12} className="text-slate-400" />
+                    <div className="flex items-center gap-1.5 text-xs text-foreground">
+                      <Clock size={12} className="text-muted-foreground" />
                       {formatDuration(service.duration_minutes)}
                     </div>
                   </td>
                   <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700">
-                      <DollarSign size={12} className="text-slate-400" />
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                      <DollarSign size={12} className="text-muted-foreground" />
                       {formatPrice(service.price)}
                     </div>
                   </td>
@@ -314,20 +314,20 @@ export function ServicesManagementView() {
                         {service.doctors.map((doctor) => (
                           <span
                             key={doctor.id}
-                            className="inline-flex items-center gap-1 rounded-md border border-cyan-100 bg-cyan-50 px-2 py-0.5 text-[11px] font-medium text-cyan-800"
+                            className="inline-flex items-center gap-1 rounded-md border border-primary bg-accent px-2 py-0.5 text-xs font-medium text-primary"
                           >
                             {doctor.first_name} {doctor.last_name}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <span className="text-[11px] italic text-slate-400">Todos los doctores</span>
+                      <span className="text-xs italic text-muted-foreground">Todos los doctores</span>
                     )}
                   </td>
                   <td className="px-5 py-3.5">
                     <span
-                      className={`rounded-md px-2.5 py-1 text-[11px] font-semibold ${
-                        service.is_active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+                      className={`rounded-md px-2.5 py-1 text-xs font-semibold ${
+                        service.is_active ? "bg-success-bg text-success" : "bg-muted text-muted-foreground"
                       }`}
                     >
                       {service.is_active ? "Activo" : "Inactivo"}
@@ -338,7 +338,7 @@ export function ServicesManagementView() {
                       <button
                         type="button"
                         onClick={() => openEdit(service)}
-                        className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-slate-100 text-slate-500 transition-all hover:bg-[var(--brand-navy-soft)] hover:text-[var(--brand-navy)]"
+                        className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-muted-foreground transition-all hover:bg-[var(--ds-action-soft)] hover:text-[var(--ds-action)]"
                         title="Editar"
                       >
                         <Pencil size={12} />
@@ -346,7 +346,7 @@ export function ServicesManagementView() {
                       <button
                         type="button"
                         onClick={() => confirmDelete(service)}
-                        className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-slate-500 transition-all hover:bg-red-50 hover:text-red-600"
+                        className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-muted-foreground transition-all hover:bg-danger-bg hover:text-danger"
                         title="Eliminar"
                       >
                         <Trash2 size={12} />
@@ -361,101 +361,101 @@ export function ServicesManagementView() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="border border-slate-200 bg-white shadow-md sm:max-w-lg">
+        <DialogContent aria-describedby={undefined} className="max-h-[90dvh] overflow-y-auto border border-border bg-card sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold text-foreground">
+            <DialogTitle className="text-base font-semibold text-foreground">
               {editingService ? "Editar servicio" : "Nuevo servicio"}
             </DialogTitle>
           </DialogHeader>
 
           <div className="mt-2 flex flex-col gap-4">
             {formError && (
-              <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+              <div className="flex items-center gap-2 rounded-md border border-danger bg-danger-bg px-3 py-2 text-xs text-danger">
                 <AlertCircle size={14} />
                 {formError}
               </div>
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">
-                Nombre del servicio <span className="text-red-500">*</span>
+              <label htmlFor="servicesmanagementview-field-1" className="text-xs font-semibold text-foreground">
+                Nombre del servicio <span className="text-danger">*</span>
               </label>
-              <input
+              <input id="servicesmanagementview-field-1"
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="Ej. Consulta general"
-                className="w-full rounded-[12px] border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-[var(--brand-navy)] focus:ring-2 focus:ring-[var(--brand-navy-soft)]"
+                className="w-full rounded-md border border-input bg-card px-3 py-2.5 text-sm outline-none transition-all focus:border-[var(--ds-action)] focus:ring-2 focus:ring-[var(--ds-action-soft)]"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">Descripción</label>
-              <textarea
+              <label htmlFor="servicesmanagementview-field-2" className="text-xs font-semibold text-foreground">Descripción</label>
+              <textarea id="servicesmanagementview-field-2"
                 value={form.description}
                 onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
                 placeholder="Descripción breve del servicio"
                 rows={2}
-                className="w-full resize-none rounded-[12px] border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-[var(--brand-navy)] focus:ring-2 focus:ring-[var(--brand-navy-soft)]"
+                className="w-full resize-none rounded-md border border-input bg-card px-3 py-2.5 text-sm outline-none transition-all focus:border-[var(--ds-action)] focus:ring-2 focus:ring-[var(--ds-action-soft)]"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-foreground">
-                  Duración (minutos) <span className="text-red-500">*</span>
+                <label htmlFor="servicesmanagementview-field-3" className="text-xs font-semibold text-foreground">
+                  Duración (minutos) <span className="text-danger">*</span>
                 </label>
-                <input
+                <input id="servicesmanagementview-field-3"
                   type="number"
                   min={1}
                   value={form.duration_minutes}
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, duration_minutes: parseInt(e.target.value, 10) || 0 }))
                   }
-                  className="w-full rounded-[12px] border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-[var(--brand-navy)] focus:ring-2 focus:ring-[var(--brand-navy-soft)]"
+                  className="w-full rounded-md border border-input bg-card px-3 py-2.5 text-sm outline-none transition-all focus:border-[var(--ds-action)] focus:ring-2 focus:ring-[var(--ds-action-soft)]"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-foreground">
-                  Precio (colones CRC) <span className="text-red-500">*</span>
+                <label htmlFor="servicesmanagementview-field-4" className="text-xs font-semibold text-foreground">
+                  Precio (colones CRC) <span className="text-danger">*</span>
                 </label>
-                <input
+                <input id="servicesmanagementview-field-4"
                   type="number"
                   min={0}
                   value={form.price}
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, price: parseInt(e.target.value, 10) || 0 }))
                   }
-                  className="w-full rounded-[12px] border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-[var(--brand-navy)] focus:ring-2 focus:ring-[var(--brand-navy-soft)]"
+                  className="w-full rounded-md border border-input bg-card px-3 py-2.5 text-sm outline-none transition-all focus:border-[var(--ds-action)] focus:ring-2 focus:ring-[var(--ds-action-soft)]"
                 />
               </div>
             </div>
 
             <div className="flex flex-col gap-2">
               <label className="text-xs font-semibold text-foreground">Doctores asignados</label>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 Déjalo sin seleccionar para permitir todos los doctores. Elige doctores específicos para restringirlo.
               </p>
-              <div className="max-h-40 divide-y divide-slate-100 overflow-y-auto rounded-md border border-slate-200">
+              <div className="max-h-40 divide-y divide-border overflow-y-auto rounded-md border border-border">
                 {doctors.length === 0 ? (
-                  <div className="px-3 py-4 text-center text-xs text-slate-400">
+                  <div className="px-3 py-4 text-center text-xs text-muted-foreground">
                     No se encontraron doctores en esta clínica.
                   </div>
                 ) : (
                   doctors.map((doctor) => (
                     <label
                       key={doctor.id}
-                      className="flex cursor-pointer items-center gap-3 px-3 py-2.5 transition-all hover:bg-slate-50"
+                      className="flex min-h-11 cursor-pointer items-center gap-3 px-3 py-2.5 transition-all hover:bg-card"
                     >
                       <Checkbox
                         checked={form.doctor_ids.includes(doctor.id)}
                         onCheckedChange={() => toggleDoctor(doctor.id)}
-                        className="rounded-[4px]"
+                        className="rounded-md"
                       />
                       <div className="flex min-w-0 items-center gap-2">
                         <div
-                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
-                          style={{ backgroundColor: "var(--brand-navy)" }}
+                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-primary-foreground"
+                          style={{ backgroundColor: "var(--ds-action)" }}
                         >
                           {doctor.first_name[0]}
                           {doctor.last_name[0]}
@@ -465,7 +465,7 @@ export function ServicesManagementView() {
                             {doctor.first_name} {doctor.last_name}
                           </span>
                           {doctor.specialty && (
-                            <span className="truncate text-[10px] text-slate-400">{doctor.specialty}</span>
+                            <span className="truncate text-xs text-muted-foreground">{doctor.specialty}</span>
                           )}
                         </div>
                       </div>
@@ -474,7 +474,7 @@ export function ServicesManagementView() {
                 )}
               </div>
               {form.doctor_ids.length > 0 && (
-                <p className="text-[11px] font-medium text-[var(--brand-navy)]">
+                <p className="text-xs font-medium text-[var(--ds-action)]">
                   {form.doctor_ids.length} doctor{form.doctor_ids.length !== 1 ? "es" : ""} seleccionado{form.doctor_ids.length !== 1 ? "s" : ""}
                 </p>
               )}
@@ -486,7 +486,7 @@ export function ServicesManagementView() {
               type="button"
               onClick={() => setDialogOpen(false)}
               disabled={submitting}
-              className="rounded-md border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-50"
+              className="rounded-md border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground transition-all hover:bg-card"
             >
               Cancelar
             </button>
@@ -494,7 +494,7 @@ export function ServicesManagementView() {
               type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="citabox-primary-gradient flex items-center gap-2 rounded-[12px] px-5 py-2 text-xs font-bold text-white transition-all hover:brightness-95 disabled:opacity-60"
+              className="citabox-action flex items-center gap-2 rounded-md px-5 py-2 text-xs font-semibold text-primary-foreground transition-all hover:brightness-95 disabled:opacity-60"
             >
               {submitting && <Loader2 size={13} className="animate-spin" />}
               {editingService ? "Guardar cambios" : "Crear servicio"}
@@ -504,11 +504,11 @@ export function ServicesManagementView() {
       </Dialog>
 
       <Dialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
-        <DialogContent className="border border-slate-200 bg-white shadow-md sm:max-w-sm">
+        <DialogContent aria-describedby={undefined} className="border border-border bg-card sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold text-foreground">Eliminar servicio</DialogTitle>
+            <DialogTitle className="text-base font-semibold text-foreground">Eliminar servicio</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-foreground">
             ¿Seguro que deseas eliminar <strong>&quot;{deletingName}&quot;</strong>? Esta acción desactivará el servicio.
           </p>
           <DialogFooter className="mt-4">
@@ -516,7 +516,7 @@ export function ServicesManagementView() {
               type="button"
               onClick={() => setDeletingId(null)}
               disabled={deleting}
-              className="rounded-md border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-50"
+              className="rounded-md border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground transition-all hover:bg-card"
             >
               Cancelar
             </button>
@@ -524,7 +524,7 @@ export function ServicesManagementView() {
               type="button"
               onClick={handleDelete}
               disabled={deleting}
-              className="flex items-center gap-2 rounded-md bg-red-600 px-5 py-2 text-xs font-semibold text-white transition-all hover:opacity-90 disabled:opacity-60"
+              className="flex items-center gap-2 rounded-md bg-danger-bg text-danger border border-danger px-5 py-2 text-xs font-semibold transition-all hover:opacity-90 disabled:opacity-60"
             >
               {deleting && <Loader2 size={13} className="animate-spin" />}
               Eliminar

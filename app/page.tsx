@@ -162,8 +162,10 @@ export default function App() {
         onMobileClose={() => setMobileNavOpen(false)}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden px-3 py-3 lg:px-5 lg:py-4">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         <TopHeader
+          activeView={activeView}
+          onOpenPatient={(id) => openEmr(id)}
           role={role}
           authUser={authUser}
           onLogout={handleLogout}
@@ -173,7 +175,7 @@ export default function App() {
           onMenuClick={() => setMobileNavOpen(true)}
           onClinicSwitch={handleClinicSwitch}
         />
-        <main className="flex-1 overflow-hidden">
+        <main className="flex-1 min-h-0 overflow-hidden p-4 lg:p-6">
           {renderView()}
         </main>
       </div>

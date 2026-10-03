@@ -1,4 +1,6 @@
 "use client"
+import { appointmentStatusClass, appointmentStatusLabel } from "@/lib/design"
+
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import {
@@ -52,38 +54,7 @@ const initialState: DashboardState = {
   revenue: [],
 }
 
-const statusMeta: Record<AppointmentStatus, { label: string; className: string; dot: string }> = {
-  [AppointmentStatus.PENDING]: {
-    label: "Pendiente",
-    className: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-    dot: "bg-slate-400",
-  },
-  [AppointmentStatus.CONFIRMED]: {
-    label: "Confirmada",
-    className: "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
-    dot: "bg-blue-500",
-  },
-  [AppointmentStatus.WAITING]: {
-    label: "En espera",
-    className: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
-    dot: "bg-amber-500",
-  },
-  [AppointmentStatus.IN_CONSULTATION]: {
-    label: "En consulta",
-    className: "bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300",
-    dot: "bg-teal-500",
-  },
-  [AppointmentStatus.COMPLETED]: {
-    label: "Completada",
-    className: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
-    dot: "bg-emerald-500",
-  },
-  [AppointmentStatus.CANCELLED]: {
-    label: "Cancelada",
-    className: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
-    dot: "bg-red-500",
-  },
-}
+const statusMeta = Object.fromEntries(Object.values(AppointmentStatus).map(status => [status, {label: appointmentStatusLabel(status), className: appointmentStatusClass(status), dot: ''}])) as Record<AppointmentStatus, {label: string; className: string; dot: string}>
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("es-CR", {
@@ -112,13 +83,7 @@ function getInitials(patient: Patient) {
   return `${patient.first_name[0] ?? ""}${patient.last_name[0] ?? ""}`.toUpperCase()
 }
 
-function getAvatarColor(patient: Patient) {
-  const colors = ["#0F766E", "#334155", "#1D4ED8", "#7C3AED", "#B45309", "#BE123C"]
-  const name = `${patient.first_name}${patient.last_name}`
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  return colors[Math.abs(hash) % colors.length]
-}
+function getAvatarColor(_patient: Patient) { return "var(--ds-action)" }
 
 function buildRevenueSeries(revenue: RevenueDataPoint[]) {
   const byDate = new Map(revenue.map((point) => [point.date, point.total]))
@@ -137,7 +102,7 @@ function buildRevenueSeries(revenue: RevenueDataPoint[]) {
 function RevenueTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-md border border-border bg-card px-3 py-2 text-xs shadow-md">
+    <div className="rounded-md border border-border bg-card px-3 py-2 text-xs ">
       <p className="font-semibold text-foreground">{label}</p>
       <p className="text-muted-foreground">{formatCurrency(Number(payload[0].value ?? 0))}</p>
     </div>
@@ -156,10 +121,10 @@ function MetricCard({
   icon: React.ReactNode
 }) {
   return (
-    <div className="citabox-card p-4">
+    <div>
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[var(--brand-navy-soft)] text-[var(--brand-navy)]">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[var(--ds-action-soft)] text-[var(--ds-action)]">
           {icon}
         </div>
       </div>
@@ -244,12 +209,12 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
   const appointmentsToday = state.kpis?.appointments_today ?? state.appointments.length
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto rounded-[24px] bg-white/35 dark:bg-[color-mix(in_srgb,var(--background)_70%,transparent)]">
+    <div className="flex h-full flex-col overflow-y-auto rounded-md bg-transparent">
       <div className="flex flex-col gap-5 p-1 lg:p-2">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brand-navy)]">{formatClinicDateFromKey(getClinicTodayKey(), { weekday: "long", month: "long", day: "numeric" })}</p>
-            <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-foreground">Dashboard de CitaBox</h1>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ds-action)]">{formatClinicDateFromKey(getClinicTodayKey(), { weekday: "long", month: "long", day: "numeric" })}</p>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">Actividad de la clínica</h2>
           </div>
           <div className="flex items-center gap-3">
             {lastUpdated && (
@@ -260,7 +225,7 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
             <button
               onClick={loadDashboard}
               disabled={loading}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-[12px] border border-border bg-card px-3 text-xs font-bold text-foreground shadow-sm transition-colors hover:bg-[var(--brand-navy-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-xs font-semibold text-foreground  transition-colors hover:bg-[var(--ds-action-soft)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
               Actualizar
@@ -269,13 +234,13 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-950 dark:bg-red-950 dark:text-red-300">
+          <div className="flex items-center gap-2 rounded-md border border-danger bg-danger-bg px-4 py-3 text-sm text-danger   ">
             <AlertCircle size={16} />
             <span>{error}</span>
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="metric-strip">
           <MetricCard
             label="Citas"
             value={loading ? "..." : String(appointmentsToday)}
@@ -289,7 +254,7 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
             icon={<Users size={16} />}
           />
           <MetricCard
-            label="Ingresos"
+            label="Facturado este mes"
             value={loading ? "..." : formatCompact(monthRevenue)}
             helper={formatCurrency(monthRevenue)}
             icon={<DollarSign size={16} />}
@@ -302,8 +267,8 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
           />
         </div>
 
-        <div className="grid min-h-[390px] grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(360px,1fr)]">
-          <Panel title="Ingresos" meta="Últimos 14 días" action={<span className="text-xs font-medium text-muted-foreground">CRC</span>}>
+        <div className="grid min-h-[390px] grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
+          <Panel className="lg:order-2" title="Facturación" meta="Últimos 14 días" action={<span className="text-xs font-medium text-muted-foreground">CRC</span>}>
             <div className="h-[314px] px-2 py-5">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={revenueSeries} margin={{ top: 8, right: 20, left: -18, bottom: 0 }}>
@@ -318,9 +283,9 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
                     dataKey="label"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
                   />
-                  <YAxis hide />
+                  <YAxis width={60} tickFormatter={(value: number) => formatCompact(value)} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
                   <Tooltip content={<RevenueTooltip />} cursor={{ stroke: "var(--border)" }} />
                   <Area
                     type="monotone"
@@ -334,9 +299,10 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
+            <details className="border-t border-border p-4 text-sm"><summary className="cursor-pointer font-medium text-primary">Ver importes por fecha</summary><table className="mt-3 w-full text-left"><thead><tr><th className="py-2">Fecha</th><th className="py-2 text-right">Facturado (CRC)</th></tr></thead><tbody>{revenueSeries.map(day => <tr key={day.label} className="border-t border-border"><td className="py-2">{day.label}</td><td className="py-2 text-right tabular-nums">{formatCurrency(day.total)}</td></tr>)}</tbody></table></details>
           </Panel>
 
-          <Panel title="Agenda de hoy" meta="Citas activas" action={<Clock3 size={16} className="text-muted-foreground" />}>
+          <Panel className="lg:order-1" title="Agenda de hoy" meta="Primeras citas del día" action={<Clock3 size={16} className="text-muted-foreground" />}>
             {loading ? (
               <div className="flex items-center justify-center gap-2 py-20 text-muted-foreground">
                 <Loader2 size={16} className="animate-spin" />
@@ -346,7 +312,7 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
               <p className="py-20 text-center text-xs text-muted-foreground">No hay citas programadas para hoy.</p>
             ) : (
               <div className="overflow-hidden">
-                <div className="grid grid-cols-[72px_minmax(0,1fr)_96px] border-b border-border bg-[var(--surface-soft)] px-4 py-2 text-[11px] font-bold uppercase text-muted-foreground">
+                <div className="grid grid-cols-[72px_minmax(0,1fr)_96px] border-b border-border bg-[var(--ds-surface-alt)] px-4 py-2 text-xs font-semibold uppercase text-muted-foreground">
                   <span>Hora</span>
                   <span>Paciente</span>
                   <span className="text-right">Estado</span>
@@ -365,7 +331,7 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
                             {appointment.reason ?? appointment.service?.name ?? "Cita"}
                           </p>
                         </div>
-                          <span className={`inline-flex items-center justify-center gap-1.5 rounded-[8px] px-2 py-1 text-[10px] font-bold ${meta.className}`}>
+                          <span className={`inline-flex items-center justify-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold ${meta.className}`}>
                           <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
                           {meta.label}
                         </span>
@@ -385,7 +351,7 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
             action={
               <button
                 onClick={onViewPatients}
-                className="inline-flex items-center gap-1 rounded-[10px] px-2 py-1 text-xs font-bold text-[var(--brand-navy)] hover:bg-[var(--brand-navy-soft)]"
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-[var(--ds-action)] hover:bg-[var(--ds-action-soft)]"
               >
                 Ver todos
                 <ArrowRight size={13} />
@@ -404,7 +370,7 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
                 {state.patients.map((patient) => (
                   <div key={patient.id} className="flex items-center gap-3 px-4 py-3">
                     <div
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] text-[11px] font-bold text-white"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-xs font-semibold text-primary-foreground"
                       style={{ backgroundColor: getAvatarColor(patient) }}
                     >
                       {getInitials(patient)}
@@ -427,7 +393,7 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
           <Panel title="Estado operativo" meta="Situación actual de la clínica">
             <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
               <div className="p-4">
-                <p className="text-xs font-medium text-muted-foreground">Presión de agenda</p>
+                <p className="text-xs font-medium text-muted-foreground">En espera</p>
                 <p className="mt-2 text-xl font-semibold text-foreground">{waitingCount}</p>
                 <p className="mt-1 text-xs text-muted-foreground">pacientes en espera</p>
               </div>
@@ -437,7 +403,7 @@ export function AdminDashboard({ onViewPatients }: AdminDashboardProps) {
                 <p className="mt-1 text-xs text-muted-foreground">consultorios activos</p>
               </div>
               <div className="p-4">
-                <p className="text-xs font-medium text-muted-foreground">Pendientes de cierre</p>
+                <p className="text-xs font-medium text-muted-foreground">Atenciones finalizadas</p>
                 <p className="mt-2 text-xl font-semibold text-foreground">{completedCount}</p>
                 <p className="mt-1 text-xs text-muted-foreground">consultas completadas</p>
               </div>

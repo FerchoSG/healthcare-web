@@ -59,6 +59,10 @@ export async function downloadMedicalRecordPdf(recordId: string): Promise<Blob> 
     },
   );
 
+  if (response.status === 401) {
+    throw new Error("Tu sesión venció. Cierra sesión y vuelve a ingresar para descargar el PDF.");
+  }
+
   if (!response.ok) {
     throw new Error("No se pudo generar el PDF del expediente");
   }

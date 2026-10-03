@@ -17,7 +17,7 @@ async function expectOk(response: { ok(): boolean; text(): Promise<string> }) {
 export async function loginByApi(
   request: APIRequestContext,
   email = "admin@clinica.cr",
-  password = "admin123",
+  password = (process.env.E2E_ADMIN_PASSWORD ?? "admin123"),
 ): Promise<TestSession> {
   const response = await request.post(`${API_URL}/auth/login`, {
     data: { email, password },
@@ -136,12 +136,12 @@ export async function loginInUi(
   clinicName = "Clinica Demo",
 ) {
   await page.goto("/");
-  await page.getByPlaceholder("usuario@clinica.cr").fill(email);
-  await page.getByPlaceholder("********").fill(password);
+  await page.getByLabel("Correo electrónico", { exact: true }).fill(email);
+  await page.getByLabel("Contraseña", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Ingresar" }).click();
 
   const clinicButton = page.getByRole("button", {
-    name: new RegExp(`^${clinicName} `),
+    name: clinicName, exact: true,
   });
   if (await clinicButton.waitFor({ state: "visible", timeout: 5_000 }).then(() => true).catch(() => false)) {
     await clinicButton.click();

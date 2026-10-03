@@ -1,392 +1,68 @@
 "use client"
+import { useState } from 'react'
+import { Activity, CalendarDays, FileText, Users, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { api, setAccessToken, setClinicId } from '@/lib/api-client'
+import { BRAND_NAME } from '@/lib/brand'
+import { meToAuthUser, type AuthUser } from '@/lib/store'
+import type { ClinicMembershipInfo, LoginResponse, MeResponse } from '@/types/api'
+import { Button } from '@/components/ui/button'
 
-import { useState } from "react"
-import { Activity, CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react"
-import { api, setAccessToken, setClinicId } from "@/lib/api-client"
-import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand"
-import { CLINIC_TYPE_OPTIONS, defaultModulesForClinicType, type ClinicType } from "@/lib/clinic-types"
-import { meToAuthUser, type AuthUser } from "@/lib/store"
-import type { ClinicMembershipInfo, LoginResponse, MeResponse } from "@/types/api"
-
-interface AuthScreenProps {
-  onLogin: (user: AuthUser) => void
-}
-
-const FEATURES = [
-  "Accesos por rol para admin, recepcion y doctor",
-  "Agenda multi clinica con citas y pacientes",
-  "Expediente clinico con modulos por especialidad",
-  "Booking publico y portal del paciente",
-]
-
-export function AuthScreen({ onLogin }: AuthScreenProps) {
-  const [screen, setScreen] = useState<"login" | "register">("login")
+export function AuthScreen({ onLogin }: { onLogin: (user: AuthUser) => void }) {
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [pendingMemberships, setPendingMemberships] = useState<ClinicMembershipInfo[] | null>(null)
-
-  const [loginEmail, setLoginEmail] = useState("")
-  const [loginPassword, setLoginPassword] = useState("")
-
-  const [clinicName, setClinicName] = useState("")
-  const [clinicType, setClinicType] = useState<ClinicType>("GENERAL_MEDICINE")
-  const [adminName, setAdminName] = useState("")
-  const [regEmail, setRegEmail] = useState("")
-  const [regPassword, setRegPassword] = useState("")
-  const [regConfirm, setRegConfirm] = useState("")
-
-  const doLogin = async (email: string, password: string) => {
-    setError(null)
-    setLoading(true)
+  const [memberships, setMemberships] = useState<ClinicMembershipInfo[] | null>(null)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  async function selectClinic(id: string) {
+    setLoading(true); setError(null)
+    try { setClinicId(id); onLogin(meToAuthUser(await api.get<MeResponse>('/auth/me'))) }
+    catch { setError('No se pudo abrir la clínica. Intenta de nuevo.') }
+    finally { setLoading(false) }
+  }
+  async function login(event: React.FormEvent) {
+    event.preventDefault(); setError(null); setLoading(true)
     try {
-      const loginRes = await api.post<LoginResponse>(
-        "/auth/login",
-        { email, password },
-        { skipAuth: true },
-      )
-      setAccessToken(loginRes.access_token)
-
-      if (loginRes.memberships.length === 0) {
-        throw new Error("Tu usuario no tiene una clinica activa asociada")
-      }
-
-      if (loginRes.memberships.length > 1) {
-        setPendingMemberships(loginRes.memberships)
-        return
-      }
-
-      await selectClinic(loginRes.memberships[0].clinic_id)
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "No se pudo iniciar sesion")
-    } finally {
-      setLoading(false)
-    }
+      const res = await api.post<LoginResponse>('/auth/login', { email: email.trim(), password }, { skipAuth: true })
+      setAccessToken(res.access_token)
+      if (!res.memberships.length) { setError('Tu cuenta no tiene una clínica activa. Contacta al administrador.'); return }
+      if (res.memberships.length > 1) setMemberships(res.memberships)
+      else await selectClinic(res.memberships[0].clinic_id)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : ''
+      setError(/credentials|unauthorized/i.test(message) ? 'El correo o la contraseña no son correctos.' : 'No se pudo ingresar. Revisa tu conexión e intenta de nuevo.')
+    } finally { setLoading(false) }
   }
-
-  const selectClinic = async (clinicId: string) => {
-    setError(null)
-    setLoading(true)
-    try {
-      setClinicId(clinicId)
-      const me = await api.get<MeResponse>("/auth/me")
-      onLogin(meToAuthUser(me))
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "No se pudo abrir la clinica")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleLogin = (event: React.FormEvent) => {
-    event.preventDefault()
-    doLogin(loginEmail, loginPassword)
-  }
-
-  const handleRegister = (event: React.FormEvent) => {
-    event.preventDefault()
-    if (regPassword !== regConfirm) {
-      setError("Las contrasenas no coinciden")
-      return
-    }
-    setError(
-      `El alta automatica de clinicas aun no esta cerrada. Usa un usuario existente o termina primero el flujo backend de registro para ${clinicName || "la clinica"}.`,
-    )
-  }
-
   return (
-    <div className="min-h-screen flex font-sans" style={{ backgroundColor: "var(--app-bg)" }}>
-      <div
-        className="hidden lg:flex flex-col justify-between w-[52%] p-12 relative overflow-hidden"
-        style={{ backgroundColor: "#008BB0" }}
-      >
-        <div
-          className="absolute inset-0 opacity-[0.1]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
-          }}
-        />
-
-        <div className="flex items-center gap-3 relative z-10">
-          <div
-            className="w-10 h-10 rounded-md flex items-center justify-center"
-            style={{ backgroundColor: "var(--neon-green)" }}
-          >
-            <Activity size={20} className="text-white" strokeWidth={2.5} />
-          </div>
-          <span className="font-bold text-xl text-white tracking-tight">{BRAND_NAME}</span>
-        </div>
-
-        <div className="relative z-10 space-y-6">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--neon-green)" }}>
-              {BRAND_TAGLINE}
-            </p>
-            <h2 className="text-4xl font-extrabold text-white leading-tight text-balance">
-              Operacion clinica clara, moderna y lista para Costa Rica.
-            </h2>
-            <p className="mt-4 text-base text-white/70 leading-relaxed">
-              Centraliza agenda, pacientes, expediente medico, equipo clinico y acceso del paciente en una sola plataforma.
-            </p>
-          </div>
-
-          <ul className="space-y-3">
-            {FEATURES.map((feature) => (
-              <li key={feature} className="flex items-start gap-3">
-                <CheckCircle2 size={16} className="mt-0.5 shrink-0" style={{ color: "var(--neon-green)" }} />
-                <span className="text-sm text-white/80">{feature}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="relative z-10 p-5 rounded-md border border-white/10 bg-white/5">
-          <p className="text-sm text-white/80 italic leading-relaxed">
-            "La operacion diaria necesita menos hojas sueltas y menos llamadas perdidas. Eso es exactamente lo que buscamos resolver."
-          </p>
-          <div className="mt-4">
-            <p className="text-xs font-semibold text-white">Direccion de producto</p>
-            <p className="text-[11px] text-white/50">Enfoque v1: agenda, pacientes, EMR y portal</p>
+    <main className="grid min-h-screen lg:grid-cols-2">
+      <section className="hidden flex-col justify-between border-r border-border bg-accent px-12 py-10 lg:flex">
+        <div className="flex items-center gap-3 text-primary"><Activity size={26} /><span className="text-xl font-semibold">{BRAND_NAME}</span></div>
+        <div className="mx-auto w-full max-w-md">
+          <p className="mb-4 text-sm font-medium text-primary">Gestión clínica para Costa Rica</p>
+          <h2 className="text-4xl font-semibold leading-tight text-foreground">Tu clínica,<br />en orden.</h2>
+          <p className="mt-5 max-w-sm text-base text-muted-foreground">La agenda del día, la información de tus pacientes y cada consulta en un mismo lugar.</p>
+          <div className="mt-10 divide-y divide-border border-y border-border">
+            {[{ Icon: CalendarDays, name: 'Agenda', text: 'Citas y atención por profesional' }, { Icon: Users, name: 'Pacientes', text: 'Información e historial a mano' }, { Icon: FileText, name: 'Expedientes', text: 'Continuidad para cada consulta' }].map(({ Icon, name, text }) => <div key={name} className="flex items-center gap-4 py-5"><Icon className="text-primary" size={22} /><div><p className="font-medium">{name}</p><p className="text-sm text-muted-foreground">{text}</p></div></div>)}
           </div>
         </div>
-      </div>
-
-      <div className="flex-1 flex flex-col items-center justify-center p-8 lg:p-12">
-        <div className="flex lg:hidden items-center gap-2 mb-8">
-          <div
-            className="w-8 h-8 rounded-md flex items-center justify-center"
-            style={{ backgroundColor: "var(--neon-green)" }}
-          >
-            <Activity size={16} className="text-white" strokeWidth={2.5} />
-          </div>
-          <span className="font-bold text-base text-foreground">{BRAND_NAME}</span>
+        <p className="text-xs text-muted-foreground">Un espacio de trabajo para tu equipo y tu clínica.</p>
+      </section>
+      <section className="flex items-center justify-center bg-card px-6 py-12">
+        <div className="w-full max-w-sm">
+          <div className="mb-10 flex items-center gap-2 text-primary lg:hidden"><Activity /><span className="text-xl font-semibold">{BRAND_NAME}</span></div>
+          <p className="mb-2 text-sm font-medium text-primary">Acceso del personal</p>
+          <h1 className="text-2xl font-semibold">{memberships ? 'Elige tu clínica' : 'Bienvenido de nuevo'}</h1>
+          <p className="mt-2 mb-8 text-sm text-muted-foreground">{memberships ? 'Selecciona el espacio donde vas a trabajar.' : 'Ingresa con la cuenta de tu equipo clínico.'}</p>
+          {error && <p role="alert" className="mb-5 rounded-md bg-danger-bg px-4 py-3 text-sm text-danger">{error}</p>}
+          {memberships ? <div className="space-y-3">{memberships.map(m => <Button key={m.clinic_id} variant="outline" className="h-auto w-full justify-between py-4" disabled={loading} onClick={() => selectClinic(m.clinic_id)}>{m.clinic_name}{loading && <Loader2 className="animate-spin" />}</Button>)}</div> : <form onSubmit={login} className="space-y-5">
+            <div><label htmlFor="staff-email" className="mb-2 block text-sm font-medium">Correo electrónico</label><input id="staff-email" type="email" autoComplete="username" required value={email} onChange={e => setEmail(e.target.value)} className="h-11 w-full rounded-md border border-input bg-card px-3 text-sm" /></div>
+            <div><label htmlFor="staff-password" className="mb-2 block text-sm font-medium">Contraseña</label><div className="relative"><input id="staff-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} className="h-11 w-full rounded-md border border-input bg-card px-3 pr-12 text-sm" /><button type="button" aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} onClick={() => setShowPassword(v => !v)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></div>
+            <Button className="h-11 w-full" type="submit" disabled={loading}>{loading && <Loader2 className="animate-spin" />}{loading ? 'Ingresando…' : 'Ingresar'}</Button>
+          </form>}
+          <p className="mt-6 text-sm text-muted-foreground">Si necesitas acceso, solicítalo al administrador de tu clínica.</p>
+          <div className="mt-8 border-t border-border pt-6"><p className="text-sm text-muted-foreground">¿Buscas tus citas o indicaciones?</p><a href="/portal" className="mt-2 inline-block text-sm font-medium text-primary underline underline-offset-4">Ir al portal del paciente</a></div>
         </div>
-
-        <div className="w-full max-w-[400px]">
-          {pendingMemberships ? (
-            <>
-              <div className="mb-8">
-                <h1 className="text-2xl font-extrabold text-foreground">Elegir clínica</h1>
-                <p className="text-sm text-muted-foreground mt-1">Selecciona el espacio de trabajo que quieres abrir</p>
-              </div>
-
-              {error && (
-                <div className="mb-4 px-4 py-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
-                  {error}
-                </div>
-              )}
-
-              <div className="space-y-2.5">
-                {pendingMemberships.map((membership) => (
-                  <button
-                    key={membership.clinic_id}
-                    disabled={loading}
-                    onClick={() => selectClinic(membership.clinic_id)}
-                    className="w-full flex items-center justify-between px-5 py-3.5 rounded-md border border-border bg-white shadow-sm hover:border-[var(--neon-green)] hover:bg-[var(--neon-green-bg)] group transition-all disabled:opacity-60"
-                  >
-                    <div className="text-left">
-                      <p className="text-sm font-semibold text-foreground group-hover:text-[var(--neon-green-text)] transition-colors">
-                        {membership.clinic_name}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{membership.role}</p>
-                    </div>
-                    {loading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
-                  </button>
-                ))}
-              </div>
-            </>
-          ) : screen === "login" ? (
-            <>
-              <div className="mb-8">
-                <h1 className="text-2xl font-extrabold text-foreground">Bienvenido de nuevo</h1>
-                <p className="text-sm text-muted-foreground mt-1">Ingresa con tu cuenta de clínica</p>
-              </div>
-
-              {error && (
-                <div className="mb-4 px-4 py-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
-                  {error}
-                </div>
-              )}
-
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Correo</label>
-                  <input
-                    type="email"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder="usuario@clinica.cr"
-                    className="w-full px-4 py-3 rounded-md bg-white shadow-sm text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Contrasena</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="********"
-                      className="w-full px-4 py-3 rounded-md bg-white shadow-sm text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all pr-12"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((value) => !value)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3 rounded-md bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-all shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
-                >
-                  {loading && <Loader2 size={14} className="animate-spin" />}
-                  Ingresar
-                </button>
-              </form>
-
-              <p className="text-center text-xs text-muted-foreground mt-8">
-                Nueva clínica?{" "}
-                <button
-                  onClick={() => setScreen("register")}
-                  className="font-semibold text-foreground hover:underline"
-                >
-                  Preparar alta
-                </button>
-              </p>
-            </>
-          ) : (
-            <>
-              <div className="mb-8">
-                <h1 className="text-2xl font-extrabold text-foreground">Preparar registro</h1>
-                <p className="text-sm text-muted-foreground mt-1">Completa los datos base de la clínica para continuar el alta</p>
-              </div>
-
-              {error && (
-                <div className="mb-4 px-4 py-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
-                  {error}
-                </div>
-              )}
-
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Nombre de clínica</label>
-                  <input
-                    type="text"
-                    value={clinicName}
-                    onChange={(e) => setClinicName(e.target.value)}
-                    placeholder="Clinica Integral San Carlos"
-                    required
-                    className="w-full px-4 py-3 rounded-md bg-white shadow-sm text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Tipo de clínica</label>
-                  <select
-                    value={clinicType}
-                    onChange={(e) => setClinicType(e.target.value as ClinicType)}
-                    className="w-full px-4 py-3 rounded-md bg-white shadow-sm text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
-                  >
-                    {CLINIC_TYPE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-[11px] text-muted-foreground">
-                    Modulos sugeridos: {defaultModulesForClinicType(clinicType).join(", ").toLowerCase().replaceAll("_", " ")}
-                  </p>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Administrador responsable</label>
-                  <input
-                    type="text"
-                    value={adminName}
-                    onChange={(e) => setAdminName(e.target.value)}
-                    placeholder="Dra. Ana Rojas"
-                    required
-                    className="w-full px-4 py-3 rounded-md bg-white shadow-sm text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Correo</label>
-                  <input
-                    type="email"
-                    value={regEmail}
-                    onChange={(e) => setRegEmail(e.target.value)}
-                    placeholder="admin@clinica.cr"
-                    required
-                    className="w-full px-4 py-3 rounded-md bg-white shadow-sm text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Contrasena</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
-                      placeholder="********"
-                      required
-                      className="w-full px-4 py-3 rounded-md bg-white shadow-sm text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all pr-12"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((value) => !value)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Confirmar contrasena</label>
-                  <div className="relative">
-                    <input
-                      type={showConfirm ? "text" : "password"}
-                      value={regConfirm}
-                      onChange={(e) => setRegConfirm(e.target.value)}
-                      placeholder="********"
-                      required
-                      className="w-full px-4 py-3 rounded-md bg-white shadow-sm text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all pr-12"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirm((value) => !value)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-                </div>
-                <button
-                  type="submit"
-                  className="w-full py-3.5 rounded-md text-sm font-bold hover:opacity-90 transition-all text-white mt-2 shadow-sm"
-                  style={{ backgroundColor: "var(--neon-green)" }}
-                >
-                  Guardar datos base
-                </button>
-              </form>
-
-              <p className="text-center text-xs text-muted-foreground mt-8">
-                Ya tienes una cuenta?{" "}
-                <button
-                  onClick={() => setScreen("login")}
-                  className="font-semibold text-foreground hover:underline"
-                >
-                  Ingresar
-                </button>
-              </p>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }

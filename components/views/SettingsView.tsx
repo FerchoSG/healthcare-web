@@ -20,7 +20,6 @@ import {
   type ClinicType,
   type SpecialtyModule,
 } from "@/lib/clinic-types"
-import { BRAND_DOMAIN, BRAND_SUPPORT_EMAIL } from "@/lib/brand"
 
 export function SettingsView() {
   const [staffFilter, setStaffFilter] = useState<"active" | "inactive" | "all">("active")
@@ -140,7 +139,7 @@ export function SettingsView() {
       setInviteMessage(
         created.invite_delivery === "sent"
           ? "Invitación enviada por correo."
-          : "Usuario agregado. El correo no se pudo enviar desde Resend. Revisa la configuración del remitente o el dominio.",
+          : "Usuario agregado. No se pudo enviar su invitación por correo. Contacta al administrador de la plataforma.",
       )
       setShowInvite(false)
     } catch (err) {
@@ -260,22 +259,22 @@ export function SettingsView() {
   const inactiveCount = staff.filter((member) => member.is_active === false || Boolean(member.deleted_at)).length
 
   return (
-    <div className="citabox-settings h-full overflow-y-auto rounded-[24px] bg-white/40">
-      <div className="min-h-full rounded-[24px] border border-white/70 bg-white/82 shadow-[0_24px_70px_rgba(20,60,146,0.08)] backdrop-blur">
+    <div className="citabox-settings h-full overflow-y-auto rounded-md bg-card">
+      <div className="min-h-full rounded-md border border-border bg-card  ">
         <div className="border-b border-border px-6 pb-0 pt-6">
           <div className="mb-5 flex flex-col gap-1">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brand-navy)]">Administración</p>
-            <h2 className="text-2xl font-extrabold tracking-tight text-foreground">Configuración</h2>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ds-action)]">Administración</p>
+            <h2 className="text-2xl font-semibold tracking-tight text-foreground">Configuración</h2>
           </div>
           <Tabs defaultValue="clinic">
-            <TabsList className="mb-0 gap-2 rounded-none border-b-0 bg-transparent p-0">
-              <TabsTrigger value="clinic" className="rounded-t-[14px] rounded-b-none border-b-2 border-transparent px-5 py-3 text-sm font-bold transition-all data-[state=active]:border-[var(--brand-navy)] data-[state=active]:bg-[var(--brand-navy-soft)] data-[state=active]:text-[var(--brand-navy)] data-[state=active]:shadow-none">
+            <TabsList className="mb-0 flex w-full justify-start gap-1 overflow-x-auto rounded-none border-b-0 bg-transparent p-0">
+              <TabsTrigger value="clinic" className="rounded-md rounded-b-none border-b-2 border-transparent px-3 py-3 sm:px-5 text-sm font-semibold transition-all data-[state=active]:border-[var(--ds-action)] data-[state=active]:bg-[var(--ds-action-soft)] data-[state=active]:text-[var(--ds-action)] data-[state=active]:shadow-none">
                 Perfil de clínica
               </TabsTrigger>
-              <TabsTrigger value="staff" className="rounded-t-[14px] rounded-b-none border-b-2 border-transparent px-5 py-3 text-sm font-bold transition-all data-[state=active]:border-[var(--brand-navy)] data-[state=active]:bg-[var(--brand-navy-soft)] data-[state=active]:text-[var(--brand-navy)] data-[state=active]:shadow-none">
+              <TabsTrigger value="staff" className="rounded-md rounded-b-none border-b-2 border-transparent px-3 py-3 sm:px-5 text-sm font-semibold transition-all data-[state=active]:border-[var(--ds-action)] data-[state=active]:bg-[var(--ds-action-soft)] data-[state=active]:text-[var(--ds-action)] data-[state=active]:shadow-none">
                 Equipo
               </TabsTrigger>
-              <TabsTrigger value="services" className="rounded-t-[14px] rounded-b-none border-b-2 border-transparent px-5 py-3 text-sm font-bold transition-all data-[state=active]:border-[var(--brand-navy)] data-[state=active]:bg-[var(--brand-navy-soft)] data-[state=active]:text-[var(--brand-navy)] data-[state=active]:shadow-none">
+              <TabsTrigger value="services" className="rounded-md rounded-b-none border-b-2 border-transparent px-3 py-3 sm:px-5 text-sm font-semibold transition-all data-[state=active]:border-[var(--ds-action)] data-[state=active]:bg-[var(--ds-action-soft)] data-[state=active]:text-[var(--ds-action)] data-[state=active]:shadow-none">
                 Servicios
               </TabsTrigger>
             </TabsList>
@@ -289,67 +288,67 @@ export function SettingsView() {
               ) : (
                 <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,720px)_minmax(320px,1fr)]">
                   <div className="citabox-card flex flex-col gap-5 p-6">
-                  {error && <p className="text-sm text-red-600">{error}</p>}
+                  {error && <p className="text-sm text-danger">{error}</p>}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-foreground">Nombre</label>
-                      <input
+                      <label htmlFor="settingsview-field-1" className="text-xs font-semibold text-foreground">Nombre</label>
+                      <input id="settingsview-field-1"
                         type="text"
                         value={clinic.name}
                         onChange={setField("name")}
-                        className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+                        className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-foreground">Cédula jurídica</label>
-                      <input
+                      <label htmlFor="settingsview-field-2" className="text-xs font-semibold text-foreground">Cédula jurídica</label>
+                      <input id="settingsview-field-2"
                         type="text"
                         value={clinic.taxId}
                         readOnly
-                        className="w-full px-4 py-2.5 rounded-lg bg-muted text-muted-foreground text-sm border border-border outline-none cursor-not-allowed"
+                        className="w-full px-4 py-2.5 rounded-lg bg-muted text-muted-foreground text-sm border border-input outline-none cursor-not-allowed"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-foreground">Teléfono</label>
-                      <input
+                      <label htmlFor="settingsview-field-3" className="text-xs font-semibold text-foreground">Teléfono</label>
+                      <input id="settingsview-field-3"
                         type="tel"
                         value={clinic.phone}
                         onChange={setField("phone")}
-                        className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+                        className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-foreground">Correo</label>
-                      <input
+                      <label htmlFor="settingsview-field-4" className="text-xs font-semibold text-foreground">Correo</label>
+                      <input id="settingsview-field-4"
                         type="email"
                         value={clinic.email}
                         onChange={setField("email")}
-                        className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+                        className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
                       />
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-foreground">Dirección</label>
-                    <input
+                    <label htmlFor="settingsview-field-5" className="text-xs font-semibold text-foreground">Dirección</label>
+                    <input id="settingsview-field-5"
                       type="text"
                       value={clinic.address}
                       onChange={setField("address")}
-                      className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+                      className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-foreground">Tipo de clínica</label>
-                      <select
+                      <label htmlFor="settingsview-field-6" className="text-xs font-semibold text-foreground">Tipo de clínica</label>
+                      <select id="settingsview-field-6"
                         value={clinic.clinicType}
                         onChange={(e) => setClinicType(e.target.value as ClinicType)}
-                        className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+                        className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
                       >
                         {CLINIC_TYPE_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>
@@ -379,21 +378,21 @@ export function SettingsView() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-foreground">Teléfono público</label>
-                      <input
+                      <label htmlFor="settingsview-field-7" className="text-xs font-semibold text-foreground">Teléfono público</label>
+                      <input id="settingsview-field-7"
                         type="tel"
                         value={clinic.publicPhone}
                         onChange={setField("publicPhone")}
-                        className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+                        className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-foreground">Correo público</label>
-                      <input
+                      <label htmlFor="settingsview-field-8" className="text-xs font-semibold text-foreground">Correo público</label>
+                      <input id="settingsview-field-8"
                         type="email"
                         value={clinic.publicEmail}
                         onChange={setField("publicEmail")}
-                        className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+                        className="w-full px-4 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
                       />
                     </div>
                   </div>
@@ -405,45 +404,45 @@ export function SettingsView() {
                       onChange={(e) => setClinic((prev) => ({ ...prev, bookingEnabled: e.target.checked }))}
                       className="h-4 w-4"
                     />
-                    Habilitar booking en línea
+                    Habilitar reservas en línea
                   </label>
 
-                  <div className="rounded-[14px] border border-border bg-[var(--surface-soft)] p-4 text-xs text-muted-foreground">
-                    El dominio sugerido para v1 es <span className="font-semibold text-foreground">{BRAND_DOMAIN}</span>. El soporte operativo se centraliza en <span className="font-semibold text-foreground">{BRAND_SUPPORT_EMAIL}</span>.
+                  <div className="rounded-md border border-border bg-[var(--ds-surface-alt)] p-4 text-xs text-muted-foreground">
+                    Estos datos se muestran en las reservas y el portal del paciente. Mantén actualizados el contacto y los servicios de tu clínica.
                   </div>
 
                   <button
                     onClick={handleSaveClinic}
                     disabled={savingClinic}
-                    className="citabox-primary-gradient w-fit rounded-[12px] px-6 py-2.5 text-sm font-bold text-white transition-all hover:brightness-95 disabled:opacity-50"
+                    className="citabox-action w-fit rounded-md px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:brightness-95 disabled:opacity-50"
                   >
                     {savingClinic ? "Guardando..." : saved ? "Guardado" : "Guardar cambios"}
                   </button>
                   </div>
 
                   <aside className="flex flex-col gap-4">
-                    <div className="citabox-primary-gradient rounded-[20px] p-5 text-white shadow-lg shadow-blue-900/10">
-                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/70">Clínica activa</p>
-                      <h3 className="mt-3 text-2xl font-extrabold">{clinic.name || "Clínica"}</h3>
-                      <p className="mt-2 text-sm text-white/72">{clinic.address || "Dirección pendiente"}</p>
+                    <div className="rounded-lg border border-border bg-accent p-5 text-foreground">
+                      <p className="text-xs font-semibold text-primary">Vista pública de la clínica</p>
+                      <h3 className="mt-3 text-2xl font-semibold">{clinic.name || "Clínica"}</h3>
+                      <p className="mt-2 text-sm text-muted-foreground">{clinic.address || "Dirección pendiente"}</p>
                     </div>
                     <div className="citabox-card p-5">
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Estado público</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado público</p>
                       <div className="mt-4 grid gap-3">
-                        <div className="flex items-center justify-between rounded-[14px] bg-[var(--surface-soft)] px-4 py-3">
-                          <span className="text-sm font-semibold text-foreground">Booking</span>
-                          <span className={`rounded-[10px] px-2.5 py-1 text-xs font-bold ${clinic.bookingEnabled ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+                        <div className="flex items-center justify-between rounded-md bg-[var(--ds-surface-alt)] px-4 py-3">
+                          <span className="text-sm font-semibold text-foreground">Reservas en línea</span>
+                          <span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${clinic.bookingEnabled ? "bg-success-bg text-success" : "bg-danger-bg text-danger"}`}>
                             {clinic.bookingEnabled ? "Activo" : "Inactivo"}
                           </span>
                         </div>
-                        <div className="rounded-[14px] bg-[var(--surface-soft)] px-4 py-3">
+                        <div className="rounded-md bg-[var(--ds-surface-alt)] px-4 py-3">
                           <p className="text-xs font-semibold text-muted-foreground">Contacto público</p>
-                          <p className="mt-1 text-sm font-bold text-foreground">{clinic.publicPhone || "Sin teléfono"}</p>
+                          <p className="mt-1 text-sm font-semibold text-foreground">{clinic.publicPhone || "Sin teléfono"}</p>
                           <p className="text-xs text-muted-foreground">{clinic.publicEmail || "Sin correo"}</p>
                         </div>
-                        <div className="rounded-[14px] bg-[var(--brand-coral-soft)] px-4 py-3">
-                          <p className="text-xs font-semibold text-[var(--brand-coral)]">Módulos habilitados</p>
-                          <p className="mt-1 text-lg font-extrabold text-foreground">{clinic.specialtyModules.length}</p>
+                        <div className="rounded-md bg-[var(--ds-action-soft)] px-4 py-3">
+                          <p className="text-xs font-semibold text-[var(--ds-action)]">Módulos habilitados</p>
+                          <p className="mt-1 text-lg font-semibold text-foreground">{clinic.specialtyModules.length}</p>
                         </div>
                       </div>
                     </div>
@@ -468,10 +467,10 @@ export function SettingsView() {
                         key={option.value}
                         type="button"
                         onClick={() => setStaffFilter(option.value as "active" | "inactive" | "all")}
-                        className={`rounded-md px-3 py-1.5 text-[11px] font-semibold transition-all ${
+                        className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
                           staffFilter === option.value
-                            ? "bg-foreground text-background"
-                            : "border border-border bg-white text-muted-foreground hover:text-foreground"
+                            ? "bg-primary text-primary-foreground"
+                            : "border border-border bg-card text-muted-foreground hover:text-foreground"
                         }`}
                       >
                         {option.label}
@@ -481,40 +480,40 @@ export function SettingsView() {
                 </div>
                 <button
                   onClick={() => setShowInvite(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-all"
+                  className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-all"
                 >
                   <UserPlus size={13} />
                   Agregar usuario
                 </button>
               </div>
 
-              {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
-              {inviteMessage && <p className="text-sm text-emerald-700 mb-4">{inviteMessage}</p>}
+              {error && <p className="text-sm text-danger mb-4">{error}</p>}
+              {inviteMessage && <p className="text-sm text-success mb-4">{inviteMessage}</p>}
 
               {showInvite && (
                 <div className="bg-muted/60 rounded-lg p-4 mb-5 border border-border">
-                  <p className="text-xs font-bold text-foreground mb-3">Invitar integrante</p>
+                  <p className="text-xs font-semibold text-foreground mb-3">Invitar integrante</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input
                       type="text"
                       placeholder="Nombre"
                       value={inviteForm.firstName}
                       onChange={(e) => setInviteForm((prev) => ({ ...prev, firstName: e.target.value }))}
-                      className="px-3 py-2 rounded-md bg-white shadow-sm text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                      className="px-3 py-2 rounded-md bg-card  text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40"
                     />
                     <input
                       type="text"
                       placeholder="Apellido"
                       value={inviteForm.lastName}
                       onChange={(e) => setInviteForm((prev) => ({ ...prev, lastName: e.target.value }))}
-                      className="px-3 py-2 rounded-md bg-white shadow-sm text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                      className="px-3 py-2 rounded-md bg-card  text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40"
                     />
                     <input
                       type="email"
                       placeholder="Correo"
                       value={inviteForm.email}
                       onChange={(e) => setInviteForm((prev) => ({ ...prev, email: e.target.value }))}
-                      className="px-3 py-2 rounded-md bg-white shadow-sm text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                      className="px-3 py-2 rounded-md bg-card  text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40"
                     />
                     <select
                       value={inviteForm.role}
@@ -524,7 +523,7 @@ export function SettingsView() {
                           role: e.target.value as Exclude<Role, Role.SUPER_ADMIN>,
                         }))
                       }
-                      className="px-3 py-2 rounded-md bg-white shadow-sm text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                      className="px-3 py-2 rounded-md bg-card  text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40"
                     >
                       <option value={Role.DOCTOR}>Doctor</option>
                       <option value="STAFF">Recepción</option>
@@ -535,17 +534,17 @@ export function SettingsView() {
                       placeholder="Especialidad opcional"
                       value={inviteForm.specialty}
                       onChange={(e) => setInviteForm((prev) => ({ ...prev, specialty: e.target.value }))}
-                      className="px-3 py-2 rounded-md bg-white shadow-sm text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                      className="px-3 py-2 rounded-md bg-card  text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40"
                     />
                   </div>
                   <p className="mt-3 text-xs text-muted-foreground">
                     CitaBox generará una clave temporal y enviará el acceso por correo cuando Resend esté configurado.
                   </p>
                   <div className="flex gap-2 mt-3">
-                    <button onClick={() => setShowInvite(false)} className="px-4 py-1.5 rounded-md bg-white text-muted-foreground text-xs font-semibold border border-border hover:text-foreground transition-all shadow-sm">
+                    <button onClick={() => setShowInvite(false)} className="px-4 py-1.5 rounded-md bg-card text-muted-foreground text-xs font-semibold border border-border hover:text-foreground transition-all ">
                       Cancelar
                     </button>
-                    <button onClick={handleInvite} disabled={savingInvite} className="px-4 py-1.5 rounded-md bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-50">
+                    <button onClick={handleInvite} disabled={savingInvite} className="px-4 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-50">
                       {savingInvite ? "Enviando..." : "Enviar invitación"}
                     </button>
                   </div>
@@ -563,7 +562,7 @@ export function SettingsView() {
                     <thead>
                       <tr className="border-b border-border bg-muted/40">
                         {["Nombre", "Correo", "Rol", "Especialidad", "Estado", "Acciones"].map((header) => (
-                          <th key={header} className="text-left text-[11px] font-semibold text-muted-foreground px-5 py-3 uppercase tracking-wide">
+                          <th key={header} className="text-left text-xs font-semibold text-muted-foreground px-5 py-3 uppercase tracking-wide">
                             {header}
                           </th>
                         ))}
@@ -586,14 +585,14 @@ export function SettingsView() {
                                     role: e.target.value as Exclude<Role, Role.SUPER_ADMIN>,
                                   }))
                                 }
-                                className="rounded-md border border-border bg-white px-2 py-1.5 text-xs text-foreground outline-none focus:ring-2 focus:ring-ring/40"
+                                className="rounded-md border border-input bg-card px-2 py-1.5 text-xs text-foreground outline-none focus:ring-2 focus:ring-ring/40"
                               >
                                 <option value={Role.DOCTOR}>Doctor</option>
                                 <option value={Role.STAFF}>Recepción</option>
                                 <option value={Role.ADMIN}>Admin</option>
                               </select>
                             ) : (
-                              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-md bg-muted text-muted-foreground">
+                              <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-muted text-muted-foreground">
                                 {member.role}
                               </span>
                             )}
@@ -605,7 +604,7 @@ export function SettingsView() {
                                 value={editForm.specialty}
                                 onChange={(e) => setEditForm((prev) => ({ ...prev, specialty: e.target.value }))}
                                 placeholder="General"
-                                className="w-full rounded-md border border-border bg-white px-2 py-1.5 text-xs text-foreground outline-none focus:ring-2 focus:ring-ring/40"
+                                className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-xs text-foreground outline-none focus:ring-2 focus:ring-ring/40"
                               />
                             ) : (
                               member.specialty || "General"
@@ -624,10 +623,10 @@ export function SettingsView() {
                               </label>
                             ) : (
                               <span
-                                className={`text-[11px] font-semibold px-2.5 py-1 rounded-md ${
+                                className={`text-xs font-semibold px-2.5 py-1 rounded-md ${
                                   member.is_active === false || member.deleted_at
-                                    ? "bg-red-50 text-red-700"
-                                    : "bg-emerald-50 text-emerald-700"
+                                    ? "bg-danger-bg text-danger"
+                                    : "bg-success-bg text-success"
                                 }`}
                               >
                                 {member.deleted_at ? "Eliminado" : member.is_active === false ? "Inactivo" : "Activo"}
@@ -641,7 +640,7 @@ export function SettingsView() {
                                   type="button"
                                   onClick={() => void handleSaveMember(member)}
                                   disabled={savingMemberId === member.membership_id}
-                                  className="inline-flex items-center gap-1 rounded-md bg-foreground px-2.5 py-1.5 text-[11px] font-semibold text-background hover:opacity-90 disabled:opacity-50"
+                                  className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
                                 >
                                   <Save size={12} />
                                   {savingMemberId === member.membership_id ? "Guardando..." : "Guardar"}
@@ -649,7 +648,7 @@ export function SettingsView() {
                                 <button
                                   type="button"
                                   onClick={cancelEditMember}
-                                  className="inline-flex items-center gap-1 rounded-md border border-border bg-white px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+                                  className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
                                 >
                                   <X size={12} />
                                   Cancelar
@@ -661,7 +660,7 @@ export function SettingsView() {
                                   type="button"
                                   onClick={() => startEditMember(member)}
                                   disabled={deletingMemberId === member.membership_id || Boolean(member.deleted_at)}
-                                  className="inline-flex items-center gap-1 rounded-md border border-border bg-white px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-muted disabled:opacity-50"
+                                  className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-50"
                                 >
                                   <Pencil size={12} />
                                   Editar
@@ -670,7 +669,7 @@ export function SettingsView() {
                                   type="button"
                                   onClick={() => void handleDeleteMember(member)}
                                   disabled={deletingMemberId === member.membership_id || Boolean(member.deleted_at)}
-                                  className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+                                  className="inline-flex items-center gap-1 rounded-md border border-danger bg-danger-bg px-2.5 py-1.5 text-xs font-semibold text-danger hover:bg-danger-bg disabled:opacity-50"
                                 >
                                   <Trash2 size={12} />
                                   {deletingMemberId === member.membership_id ? "Eliminando..." : "Eliminar"}

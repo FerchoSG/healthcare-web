@@ -24,7 +24,7 @@ test.describe("QA funcional - booking publico", () => {
     });
 
     await page.goto(`/book/${session.clinicSlug}`);
-    await page.getByRole("button", { name: "Empezar reserva" }).click();
+    await page.getByRole("button", { name: new RegExp(serviceName) }).click();
 
     await expect(page.getByRole("button", { name: new RegExp(serviceName) })).toBeVisible();
 
@@ -52,10 +52,11 @@ test.describe("QA funcional - booking publico", () => {
     });
 
     await page.goto(`/book/${session.clinicSlug}`);
-    await page.getByRole("button", { name: "Empezar reserva" }).click();
+    await page.getByRole("button", { name: new RegExp(serviceName) }).click();
     await page.getByRole("button", { name: "CM Carlos General" }).click();
     await page.getByRole("button", { name: new RegExp(serviceName) }).click();
 
+    await page.getByRole("button", { name: "Continuar", exact: true }).click();
     const bookingDate = new Date(`${getCostaRicaDateKey()}T12:00:00Z`);
     bookingDate.setUTCDate(bookingDate.getUTCDate() + 7);
     const dateKey = bookingDate.toISOString().slice(0, 10);

@@ -1,7 +1,9 @@
 "use client"
+import { appointmentStatusClass, appointmentStatusLabel } from "@/lib/design"
+
 
 import { useState, useEffect, useCallback } from "react"
-import { UserPlus, CalendarPlus, Clock, CheckCircle, DollarSign, Loader2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
+import { UserPlus, CalendarPlus, Loader2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CITABOX_DATA_CHANGED_EVENT } from "@/lib/data-events"
 import {
@@ -38,38 +40,11 @@ const STATUS_OPTIONS: AppointmentStatus[] = [
   AppointmentStatus.CANCELLED,
 ]
 
-const STATUS_LABELS: Record<AppointmentStatus, string> = {
-  [AppointmentStatus.PENDING]: "Pendiente",
-  [AppointmentStatus.CONFIRMED]: "Confirmada",
-  [AppointmentStatus.WAITING]: "En espera",
-  [AppointmentStatus.IN_CONSULTATION]: "En consulta",
-  [AppointmentStatus.COMPLETED]: "Completada",
-  [AppointmentStatus.CANCELLED]: "Cancelada",
-}
-
-const statusColors: Record<AppointmentStatus, string> = {
-  [AppointmentStatus.PENDING]: "text-muted-foreground bg-muted",
-  [AppointmentStatus.CONFIRMED]: "text-blue-700 bg-blue-50 dark:bg-blue-950 dark:text-blue-300",
-  [AppointmentStatus.WAITING]: "text-amber-700 bg-amber-50 dark:bg-amber-950 dark:text-amber-300",
-  [AppointmentStatus.IN_CONSULTATION]: "text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-300",
-  [AppointmentStatus.COMPLETED]: "text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-300",
-  [AppointmentStatus.CANCELLED]: "text-red-700 bg-red-50 dark:bg-red-950 dark:text-red-300",
-}
-
-function getInitials(first: string, last: string) {
-  return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase()
-}
-
-function getAvatarColor(name: string) {
-  const COLORS = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#74b9ff", "#fd79a8"]
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  return COLORS[Math.abs(hash) % COLORS.length]
-}
-
-function formatTime(isoString: string) {
-  return formatClinicTime(isoString)
-}
+const STATUS_LABELS = Object.fromEntries(Object.values(AppointmentStatus).map(status => [status, appointmentStatusLabel(status)])) as Record<AppointmentStatus, string>
+const statusColors = Object.fromEntries(Object.values(AppointmentStatus).map(status => [status, appointmentStatusClass(status)])) as Record<AppointmentStatus, string>
+function getInitials(first: string, last: string) { return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase() }
+function getAvatarColor(_name: string) { return "var(--ds-action)" }
+function formatTime(value: string) { return formatClinicTime(value) }
 
 interface ReceptionistDashboardProps {
   onNewAppointment: () => void
@@ -256,10 +231,10 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
   }
 
   return (
-    <div className="flex h-full flex-col gap-5 overflow-y-auto rounded-[24px] bg-white/35 p-1 lg:p-2">
+    <div className="flex h-full flex-col gap-5 overflow-y-auto rounded-md bg-transparent">
       {/* Top strip */}
       {billingWarning && (
-        <div className="flex items-start gap-3 rounded-[14px] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 shadow-sm">
+        <div className="flex items-start gap-3 rounded-md border border-warning bg-warning-bg px-4 py-3 text-warning ">
           <AlertCircle size={16} className="mt-0.5 shrink-0" />
           <div>
             <p className="text-sm font-semibold">Cobros manuales no disponibles</p>
@@ -268,67 +243,43 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="citabox-card flex items-center gap-3 p-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--brand-navy-soft)] text-[var(--brand-navy)]">
-            <Clock size={16} className="text-muted-foreground" />
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground">En espera</p>
-            <p className="text-xl font-extrabold text-foreground">
-              {appointments.filter((a) => a.status === AppointmentStatus.WAITING).length}
-            </p>
-          </div>
-        </div>
-        <div className="citabox-card flex items-center gap-3 p-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--brand-navy-soft)]">
-            <CheckCircle size={16} style={{ color: "var(--neon-green)" }} />
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground">Completadas</p>
-            <p className="text-xl font-extrabold text-foreground">{completed.length}</p>
-          </div>
-        </div>
-        <div className="citabox-card flex items-center gap-3 p-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--brand-coral-soft)] text-[var(--brand-coral)]">
-            <DollarSign size={16} className="text-muted-foreground" />
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground">Pendientes de cierre</p>
-            <p className="text-xl font-extrabold text-foreground">{pendingClosures.length}</p>
-          </div>
-        </div>
+      <div className="metric-strip metrics-three">
+        {[
+          { label: "En espera", value: appointments.filter(a => a.status === AppointmentStatus.WAITING).length },
+          { label: "Completadas", value: completed.length },
+          { label: "Pendientes de cierre", value: pendingClosures.length },
+        ].map(stat => <div key={stat.label}><p className="text-sm text-muted-foreground">{stat.label}</p><p className="mt-1 text-2xl font-semibold tabular-nums">{loading ? "…" : stat.value}</p></div>)}
       </div>
 
       <div className="grid flex-1 grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Today's Queue */}
         <div className="citabox-panel flex flex-col p-5 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-foreground">
-              Agenda del {formatDateLabel(selectedDate)}
+            <h3 className="text-sm font-semibold text-foreground">
+              {selectedDate === getClinicTodayKey() ? "Agenda de hoy" : `Agenda del ${formatDateLabel(selectedDate)}`}
             </h3>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => shiftDate(-1)}
-                className="flex h-9 w-9 items-center justify-center rounded-[12px] border border-border bg-card transition-all hover:bg-[var(--brand-navy-soft)]"
+                aria-label="Día anterior" onClick={() => shiftDate(-1)}
+                className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card transition-all hover:bg-[var(--ds-action-soft)]"
               >
                 <ChevronLeft size={16} />
               </button>
               <input
-                type="date"
+                aria-label="Fecha de la agenda" type="date"
                 value={selectedDate}
                 onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-                className="rounded-[12px] border border-border bg-[var(--surface-soft)] px-2 py-1.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-ring/40"
+                className="rounded-md border border-input bg-[var(--ds-surface-alt)] px-2 py-1.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-ring/40"
               />
               <button
-                onClick={() => shiftDate(1)}
-                className="flex h-9 w-9 items-center justify-center rounded-[12px] border border-border bg-card transition-all hover:bg-[var(--brand-navy-soft)]"
+                aria-label="Día siguiente" onClick={() => shiftDate(1)}
+                className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card transition-all hover:bg-[var(--ds-action-soft)]"
               >
                 <ChevronRight size={16} />
               </button>
               <button
                 onClick={() => setSelectedDate(getClinicTodayKey())}
-                className="rounded-[12px] border border-border bg-card px-2.5 py-1.5 text-xs font-bold transition-all hover:bg-[var(--brand-navy-soft)]"
+                className="rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-semibold transition-all hover:bg-[var(--ds-action-soft)]"
               >
                 Hoy
               </button>
@@ -343,7 +294,7 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
           )}
 
           {error && (
-            <div className="flex items-center gap-2 py-8 justify-center text-red-600">
+            <div className="flex items-center gap-2 py-8 justify-center text-danger">
               <AlertCircle size={16} />
               <span className="text-sm">{error}</span>
               <button onClick={load} className="text-sm font-semibold underline ml-2">Reintentar</button>
@@ -363,12 +314,12 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
                 const isMutating = mutatingId === apt.id
 
                 return (
-                  <div key={apt.id} className="flex items-center gap-3 rounded-[14px] border border-transparent px-2 py-2 transition-colors hover:border-border hover:bg-[var(--surface-soft)]">
+                  <div key={apt.id} className="flex items-center gap-3 rounded-md border border-transparent px-2 py-2 transition-colors hover:border-border hover:bg-[var(--ds-surface-alt)]">
                     <div
-                      className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-[12px] text-[11px] font-bold text-white transition-all hover:opacity-80"
+                      className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-md text-xs font-semibold text-primary-foreground transition-all hover:opacity-80"
                       style={{ backgroundColor: color }}
                       onClick={() => onOpenEMR(apt.patient_id)}
-                      title="Abrir expediente"
+                      title="Abrir expediente" role="button" tabIndex={0} aria-label={`Abrir expediente de ${name}`} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenEMR(apt.patient_id) } }}
                     >
                       {initials}
                     </div>
@@ -385,10 +336,10 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
                         </div>
                       )}
                       <select
-                        value={apt.status}
+                        aria-label={`Estado de la cita de ${name}`} value={apt.status}
                         onChange={(e) => handleStatusChange(apt.id, e.target.value as AppointmentStatus)}
                         disabled={isMutating}
-                        className={`cursor-pointer rounded-[10px] border-0 px-3 py-1.5 text-[11px] font-bold outline-none transition-all focus:ring-2 focus:ring-ring/40 ${isMutating ? "opacity-30" : ""} ${statusColors[apt.status] || "text-muted-foreground bg-muted"}`}
+                        className={`cursor-pointer rounded-md border-0 px-3 py-1.5 text-xs font-semibold outline-none transition-all focus:ring-2 focus:ring-ring/40 ${isMutating ? "opacity-30" : ""} ${statusColors[apt.status] || "text-muted-foreground bg-muted"}`}
                       >
                         {STATUS_OPTIONS.map((s) => (
                           <option key={s} value={s}>{STATUS_LABELS[s]}</option>
@@ -406,18 +357,18 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
         <div className="flex flex-col gap-4">
           {/* Quick Actions */}
           <div className="citabox-panel p-5">
-            <h3 className="text-sm font-bold text-foreground mb-4">Acciones rápidas</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-4">Acciones rápidas</h3>
             <div className="flex flex-col gap-3">
               <button
                 onClick={onNewAppointment}
-                className="citabox-primary-gradient flex w-full items-center justify-center gap-2 rounded-[12px] py-3 text-sm font-bold text-white transition-all hover:brightness-95"
+                className="citabox-action flex w-full items-center justify-center gap-2 rounded-md py-3 text-sm font-semibold text-primary-foreground transition-all hover:brightness-95"
               >
                 <CalendarPlus size={16} />
                 Nueva cita
               </button>
               <button
                 onClick={onWalkIn}
-                className="flex w-full items-center justify-center gap-2 rounded-[12px] border-2 border-[var(--brand-navy)] py-3 text-sm font-bold text-[var(--brand-navy)] transition-all hover:bg-[var(--brand-navy)] hover:text-white"
+                className="flex w-full items-center justify-center gap-2 rounded-md border-2 border-[var(--ds-action)] py-3 text-sm font-semibold text-[var(--ds-action)] transition-all hover:bg-[var(--ds-action)] hover:text-primary-foreground"
               >
                 <UserPlus size={16} />
                 Paciente sin cita
@@ -427,7 +378,7 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
 
           {/* Pending Checkouts */}
           <div className="citabox-panel flex-1 p-5">
-            <h3 className="text-sm font-bold text-foreground mb-3">Pendientes de cierre</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Pendientes de cierre</h3>
             {pendingClosures.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-4">No hay cierres pendientes.</p>
             ) : (
@@ -436,14 +387,14 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
                   const invoice = invoicesByAppointmentId.get(apt.id)
                   const isClosing = closingId === apt.id
                   return (
-                  <div key={apt.id} className="flex items-center justify-between rounded-[12px] border-b border-border px-2 py-2 last:border-0 hover:bg-[var(--surface-soft)]">
+                  <div key={apt.id} className="flex items-center justify-between rounded-md border-b border-border px-2 py-2 last:border-0 hover:bg-[var(--ds-surface-alt)]">
                     <div>
                       <p className="text-xs font-semibold text-foreground">
                         {apt.patient.first_name} {apt.patient.last_name}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">{apt.reason ?? apt.service?.name ?? "Cita"}</p>
+                      <p className="text-xs text-muted-foreground">{apt.reason ?? apt.service?.name ?? "Cita"}</p>
                       {invoice && (
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           Estado actual: {invoice.payment_status === PaymentStatus.PARTIAL ? "Pago parcial" : "Pendiente"}
                         </p>
                       )}
@@ -451,7 +402,7 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
                     <button
                       onClick={() => openCheckout(apt)}
                       disabled={isClosing}
-                      className="rounded-[10px] bg-[var(--brand-navy)] px-2.5 py-1 text-[10px] font-bold text-white transition-all hover:bg-[var(--brand-navy-hover)] disabled:opacity-50"
+                      className="rounded-md bg-[var(--ds-action)] px-2.5 py-1 text-xs font-semibold text-primary-foreground transition-all hover:bg-[var(--ds-action-hover)] disabled:opacity-50"
                     >
                       {isClosing ? "Registrando..." : invoice ? "Editar cobro" : "Registrar cobro"}
                     </button>
@@ -491,7 +442,7 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
                   <select
                     value={paymentStatus}
                     onChange={(e) => setPaymentStatus(e.target.value as PaymentStatus)}
-                    className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     <option value={PaymentStatus.UNPAID}>Pendiente</option>
                     <option value={PaymentStatus.PARTIAL}>Parcial</option>
@@ -504,7 +455,7 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
                   <select
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                    className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     <option value={PaymentMethod.SINPE_MOVIL}>SINPE Móvil</option>
                     <option value={PaymentMethod.TARJETA}>Tarjeta</option>
@@ -521,7 +472,7 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
                     value={paymentReference}
                     onChange={(e) => setPaymentReference(e.target.value)}
                     placeholder="SINPE-12345678"
-                    className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
                 </label>
 
@@ -535,7 +486,7 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
                     onChange={(e) => setPaidAmountInput(e.target.value)}
                     disabled={paymentStatus === PaymentStatus.UNPAID}
                     placeholder={paymentStatus === PaymentStatus.PAID && selectedCheckout.service?.price ? String(selectedCheckout.service.price / 100) : "0.00"}
-                    className="rounded-md border border-border bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
                   />
                 </label>
               </div>
@@ -546,7 +497,7 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
                   value={checkoutNotes}
                   onChange={(e) => setCheckoutNotes(e.target.value)}
                   rows={3}
-                  className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
               </label>
             </div>
@@ -564,7 +515,7 @@ export function ReceptionistDashboard({ onNewAppointment, onWalkIn, onOpenEMR }:
               type="button"
               onClick={() => selectedCheckout && void handleCloseCheckout(selectedCheckout)}
               disabled={closingId === selectedCheckout?.id}
-              className="rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background disabled:opacity-60"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
             >
               {closingId === selectedCheckout?.id ? "Guardando..." : "Guardar cobro"}
             </button>

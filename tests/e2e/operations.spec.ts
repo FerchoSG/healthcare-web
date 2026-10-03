@@ -54,7 +54,7 @@ test.describe("QA funcional - operaciones internas", () => {
       identification: `QA-HIST-${unique}`,
     });
 
-    await loginInUi(page, "admin@clinica.cr", "admin123");
+    await loginInUi(page, "admin@clinica.cr", (process.env.E2E_ADMIN_PASSWORD ?? "admin123"));
     await page.getByRole("button", { name: "Pacientes" }).click();
     await page.getByPlaceholder("Buscar paciente por nombre o cedula").fill(patient.identification);
 
@@ -71,9 +71,8 @@ test.describe("QA funcional - operaciones internas", () => {
     const lastName = `Cita ${unique}`;
     const identification = `QA-CITA-${unique}`;
 
-    await loginInUi(page, "admin@clinica.cr", "admin123");
-    await page.getByRole("button", { name: /Crear/ }).click();
-    await page.getByRole("menuitem", { name: "Nueva cita" }).click();
+    await loginInUi(page, "admin@clinica.cr", (process.env.E2E_ADMIN_PASSWORD ?? "admin123"));
+    await page.getByRole("button", { name: "Nueva cita", exact: true }).click();
 
     const dialog = page.getByRole("dialog", { name: "Nueva cita" });
     await expect(dialog).toBeVisible();
@@ -125,7 +124,7 @@ test.describe("QA funcional - operaciones internas", () => {
       reason: "QA consulta activa",
     });
 
-    await loginInUi(page, "doctor@clinica.cr", "doctor123");
+    await loginInUi(page, "doctor@clinica.cr", (process.env.E2E_DOCTOR_PASSWORD ?? "doctor123"));
     const card = page.locator(".citabox-card").filter({ hasText: `QA Consulta ${unique}` });
     await expect(card).toBeVisible();
     await card.getByRole("button", { name: "Iniciar consulta" }).click();
@@ -141,7 +140,7 @@ test.describe("QA funcional - operaciones internas", () => {
   });
 
   test("A2 muestra configuracion de equipo y acciones administrativas", async ({ page }) => {
-    await loginInUi(page, "admin@clinica.cr", "admin123");
+    await loginInUi(page, "admin@clinica.cr", (process.env.E2E_ADMIN_PASSWORD ?? "admin123"));
     await page.getByRole("button", { name: "Configuración" }).click();
     await page.getByRole("tab", { name: "Equipo" }).click();
 

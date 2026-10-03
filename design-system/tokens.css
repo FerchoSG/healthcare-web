@@ -1,0 +1,59 @@
+/* Generated from design-system/tokens.json v1.0.0. Do not edit. */
+:root, [data-light-only="true"] {
+  --ds-canvas: #F5F7F6;
+  --ds-surface: #FFFFFF;
+  --ds-surface-alt: #ECF2F0;
+  --ds-text: #1F2D2A;
+  --ds-text-muted: #55655F;
+  --ds-border: #D6E0DB;
+  --ds-control-border: #778A82;
+  --ds-action: #175C66;
+  --ds-action-hover: #104A53;
+  --ds-on-action: #FFFFFF;
+  --ds-action-soft: #E8F3F3;
+  --ds-info: #245C86;
+  --ds-info-bg: #EDF4FA;
+  --ds-success: #236548;
+  --ds-success-bg: #EAF4EE;
+  --ds-warning: #885B12;
+  --ds-warning-bg: #FFF4DB;
+  --ds-danger: #A52B36;
+  --ds-danger-bg: #FBECEF;
+  --ds-focus: #245C86;
+  --ds-neutral: #55655F;
+  --ds-neutral-bg: #ECF0EE;
+  color-scheme: light;
+}
+
+.dark {
+  --ds-canvas: #111B18;
+  --ds-surface: #192823;
+  --ds-surface-alt: #20332C;
+  --ds-text: #EAF2EE;
+  --ds-text-muted: #B4C5BC;
+  --ds-border: #334A40;
+  --ds-control-border: #7F998B;
+  --ds-action: #8BCED1;
+  --ds-action-hover: #AFDEE0;
+  --ds-on-action: #102525;
+  --ds-action-soft: #213C38;
+  --ds-info: #9FC6E5;
+  --ds-info-bg: #233342;
+  --ds-success: #93D4A9;
+  --ds-success-bg: #21382C;
+  --ds-warning: #EAC780;
+  --ds-warning-bg: #3E3320;
+  --ds-danger: #F2AAB3;
+  --ds-danger-bg: #40282F;
+  --ds-focus: #9FC6E5;
+  --ds-neutral: #B4C5BC;
+  --ds-neutral-bg: #20332C;
+  color-scheme: dark;
+}
+
+:root {
+  --ds-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ds-radius-control: 6px;
+  --ds-radius-panel: 10px;
+  --ds-radius-dialog: 12px;
+}

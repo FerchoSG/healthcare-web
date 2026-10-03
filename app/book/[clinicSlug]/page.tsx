@@ -15,6 +15,7 @@ export default function ClinicBookPage({
 }) {
   const { clinicSlug } = use(params)
   const [view, setView] = useState<AppView>("welcome")
+  const [initialServiceId, setInitialServiceId] = useState("")
   const [clinic, setClinic] = useState<PublicClinic | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -34,10 +35,10 @@ export default function ClinicBookPage({
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
-        <div className="bg-white border border-slate-200 rounded-lg shadow-md p-6 max-w-md text-center">
-          <h1 className="text-lg font-bold text-slate-900">Clínica no disponible</h1>
-          <p className="text-sm text-slate-500 mt-2">{error}</p>
+      <div className="min-h-screen flex items-center justify-center bg-muted px-4">
+        <div className="bg-card border border-border rounded-lg  p-6 max-w-md text-center">
+          <h1 className="text-lg font-semibold text-foreground">Clínica no disponible</h1>
+          <p className="text-sm text-muted-foreground mt-2">{error}</p>
         </div>
       </div>
     )
@@ -45,8 +46,8 @@ export default function ClinicBookPage({
 
   if (!clinic) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-100">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-700 border-t-transparent" />
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-border border-t-transparent" />
       </div>
     )
   }
@@ -54,9 +55,9 @@ export default function ClinicBookPage({
   return (
     <div data-light-only="true">
       {view === "welcome" ? (
-        <WelcomeLandingPage clinic={clinic} onBook={() => setView("wizard")} />
+        <WelcomeLandingPage clinic={clinic} onBook={(id) => { setInitialServiceId(id ?? ""); setView("wizard") }} />
       ) : (
-        <PatientBookingWizard clinicId={clinic.id} clinic={clinic} onHome={() => setView("welcome")} />
+        <PatientBookingWizard initialServiceId={initialServiceId} clinicId={clinic.id} clinic={clinic} onHome={() => setView("welcome")} />
       )}
     </div>
   )

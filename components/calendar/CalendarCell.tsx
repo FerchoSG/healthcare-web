@@ -7,7 +7,7 @@ import { CalendarEvent } from "./CalendarEvent"
 interface CalendarCellProps {
   date: string
   time: string
-  appointment?: Appointment
+  appointments?: Appointment[]
   timeBlock?: TimeBlock
   onClickEmpty: (date: string, time: string) => void
   onClickAppointment: (appointment: Appointment) => void
@@ -15,58 +15,36 @@ interface CalendarCellProps {
 }
 
 export function CalendarCell({
-  date,
-  time,
-  appointment,
-  timeBlock,
-  onClickEmpty,
-  onClickAppointment,
-  onClickTimeBlock,
+  date, time, appointments = [], timeBlock,
+  onClickEmpty, onClickAppointment, onClickTimeBlock,
 }: CalendarCellProps) {
-  if (timeBlock) {
-    return (
-      <div className="relative border-l border-border" style={{ minHeight: "28px" }}>
+  return (
+    <div className="relative min-h-14 border-l border-border">
+      {appointments.length ? (
+        <div className="flex flex-col gap-1 p-0.5">
+          {appointments.map(appointment => (
+            <CalendarEvent key={appointment.id} appointment={appointment} onClick={onClickAppointment} />
+          ))}
+        </div>
+      ) : timeBlock ? (
         <button
           type="button"
-          className="absolute inset-0 m-0.5 flex items-center overflow-hidden rounded-[10px] px-2 transition-opacity hover:opacity-80"
-          style={{
-            background:
-              "repeating-linear-gradient(45deg,#fee2e2,#fee2e2 5px,#fecaca 5px,#fecaca 10px)",
-            border: "1px solid #f87171",
-          }}
-          title={`Bloqueado: ${timeBlock.reason ?? "Sin motivo"} - clic para eliminar`}
-          onClick={(e) => {
-            e.stopPropagation()
-            onClickTimeBlock(timeBlock)
-          }}
+          onClick={() => onClickTimeBlock(timeBlock)}
+          title={`Horario bloqueado: ${timeBlock.reason ?? "Sin motivo"}`}
+          className="absolute inset-0.5 flex items-center overflow-hidden rounded-md border border-border bg-neutral-bg px-2 text-left text-xs text-neutral"
         >
-          <span className="truncate select-none text-[9px] font-semibold text-red-700">
-            Bloqueado: {timeBlock.reason ?? "Sin motivo"}
-          </span>
+          <span className="truncate">{timeBlock.reason ?? "No disponible"}</span>
         </button>
-      </div>
-    )
-  }
-
-  if (appointment) {
-    return (
-      <div className="relative border-l border-border" style={{ minHeight: "28px" }}>
-        <CalendarEvent appointment={appointment} onClick={onClickAppointment} />
-      </div>
-    )
-  }
-
-  return (
-    <div
-      className="group relative cursor-pointer border-l border-border"
-      style={{ minHeight: "28px" }}
-      onClick={() => onClickEmpty(date, time)}
-    >
-      <div
-        className="absolute inset-0.5 flex items-center justify-center rounded-[10px] border-2 border-dashed border-transparent opacity-0 transition-all group-hover:border-[var(--brand-navy)] group-hover:bg-[var(--brand-navy-soft)] group-hover:opacity-100"
-      >
-        <Plus size={11} className="text-muted-foreground" />
-      </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => onClickEmpty(date, time)}
+          aria-label={`Crear cita el ${date} a las ${time}`}
+          className="group absolute inset-0 flex items-center justify-center hover:bg-accent"
+        >
+          <Plus size={14} className="text-primary opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" />
+        </button>
+      )}
     </div>
   )
 }

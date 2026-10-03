@@ -1,4 +1,6 @@
 "use client"
+import { appointmentStatusClass, appointmentStatusLabel } from "@/lib/design"
+
 
 import { useState, useEffect, useCallback } from "react"
 import { CITABOX_DATA_CHANGED_EVENT } from "@/lib/data-events"
@@ -6,18 +8,13 @@ import { formatClinicTime, formatClinicDateFromKey, getClinicTodayKey } from "@/
 import { AppointmentStatus, type Appointment } from "@/types/api"
 import { fetchTodayAppointments, updateAppointmentStatus } from "@/services/appointments.service"
 import { useToast } from "@/hooks/use-toast"
-import { Stethoscope, Clock, User, FileText, Loader2, AlertCircle } from "lucide-react"
+import { Clock, FileText, Loader2, AlertCircle } from "lucide-react"
 
 function getInitials(first: string, last: string) {
   return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase()
 }
 
-function getAvatarColor(name: string) {
-  const COLORS = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#74b9ff", "#fd79a8"]
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  return COLORS[Math.abs(hash) % COLORS.length]
-}
+function getAvatarColor(_name: string) { return "var(--ds-action)" }
 
 function formatTime(isoString: string) {
   return formatClinicTime(isoString)
@@ -109,58 +106,21 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
   })
   const activeCount = appointments.filter((appointment) => appointment.status === AppointmentStatus.IN_CONSULTATION).length
 
-  const statusBadge = (status: AppointmentStatus, isActive: boolean) => {
-    if (isActive) return { cls: "text-white", style: { backgroundColor: "var(--neon-green)" }, label: "Activa" }
-    switch (status) {
-      case AppointmentStatus.WAITING: return { cls: "text-amber-700 bg-amber-50 dark:bg-amber-950 dark:text-amber-300", style: {}, label: "En espera" }
-      case AppointmentStatus.COMPLETED: return { cls: "text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-300", style: {}, label: "Completada" }
-      case AppointmentStatus.IN_CONSULTATION: return { cls: "text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-300", style: {}, label: "En consulta" }
-      case AppointmentStatus.CANCELLED: return { cls: "text-red-700 bg-red-50 dark:bg-red-950 dark:text-red-300", style: {}, label: "Cancelada" }
-      default: return { cls: "text-muted-foreground bg-muted", style: {}, label: "Pendiente" }
-    }
-  }
+  const statusBadge = (status: AppointmentStatus, _isActive: boolean) => ({ cls: appointmentStatusClass(status), style: {}, label: appointmentStatusLabel(status) })
 
   return (
-    <div className="flex h-full flex-col gap-5 overflow-y-auto rounded-[24px] bg-white/35 p-1 lg:p-2">
-      {/* Greeting */}
-      <div className="citabox-panel p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1">{todayStr}</p>
-            <h2 className="text-2xl font-extrabold text-foreground text-balance">Buen día, {displayName}.</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Tienes{" "}
-              <span className="font-semibold" style={{ color: "var(--neon-green)" }}>
-                {appointments.length} citas
-              </span>{" "}
-              programadas para hoy.
-            </p>
-          </div>
-          <div
-            className="flex h-16 w-16 items-center justify-center rounded-[18px] bg-[var(--brand-navy-soft)]"
-          >
-            <Stethoscope size={28} style={{ color: "var(--neon-green)" }} />
-          </div>
-        </div>
+    <div className="flex h-full flex-col gap-5 overflow-y-auto rounded-md bg-transparent">
+      <div>
+        <p className="text-sm text-muted-foreground">{todayStr}</p>
+        <h2 className="mt-1 text-2xl font-semibold">Agenda de hoy</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{displayName} · {appointments.length} citas programadas</p>
       </div>
-
-      {/* Stats strip */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="metric-strip metrics-three">
         {[
-          { label: "Pacientes de hoy", value: String(appointments.length), icon: <User size={14} /> },
-          { label: "En progreso", value: String(activeCount), icon: <Clock size={14} /> },
-          { label: "Completadas", value: String(appointments.filter((a) => a.status === AppointmentStatus.COMPLETED).length), icon: <FileText size={14} /> },
-        ].map((stat) => (
-          <div key={stat.label} className="citabox-card flex items-center gap-3 p-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--brand-navy-soft)] text-[var(--brand-navy)]">
-              {stat.icon}
-            </div>
-            <div>
-              <p className="text-[11px] text-muted-foreground">{stat.label}</p>
-              <p className="text-xl font-extrabold text-foreground">{stat.value}</p>
-            </div>
-          </div>
-        ))}
+          { label: "Pacientes de hoy", value: appointments.length },
+          { label: "En consulta", value: activeCount },
+          { label: "Completadas", value: appointments.filter(a => a.status === AppointmentStatus.COMPLETED).length },
+        ].map(stat => <div key={stat.label}><p className="text-sm text-muted-foreground">{stat.label}</p><p className="mt-1 text-2xl font-semibold tabular-nums">{loading ? "…" : stat.value}</p></div>)}
       </div>
 
       {/* Loading / Error */}
@@ -172,7 +132,7 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
       )}
 
       {error && (
-        <div className="flex items-center gap-2 py-8 justify-center text-red-600">
+        <div className="flex items-center gap-2 py-8 justify-center text-danger">
           <AlertCircle size={16} />
           <span className="text-sm">{error}</span>
           <button onClick={loadAppointments} className="text-sm font-semibold underline ml-2">Reintentar</button>
@@ -199,23 +159,23 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
               <div
                 key={apt.id}
                 className={`citabox-card flex flex-col gap-3 p-5 transition-all ${
-                  isActive ? "ring-2 ring-[var(--brand-navy)]" : ""
+                  isActive ? "ring-2 ring-[var(--ds-action)]" : ""
                 }`}
               >
                 {/* Header */}
                 <div className="flex items-center gap-3">
                   <div
-                    className="flex h-11 w-11 items-center justify-center rounded-[14px] text-xs font-bold text-white"
+                    className="flex h-11 w-11 items-center justify-center rounded-md text-xs font-semibold text-primary-foreground"
                     style={{ backgroundColor: color }}
                   >
                     {initials}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-foreground">{name}</p>
+                    <p className="text-sm font-semibold text-foreground">{name}</p>
                     <p className="text-xs text-muted-foreground">{apt.patient?.identification ?? ""}</p>
                   </div>
                   <span
-                    className={`rounded-[8px] px-2.5 py-1 text-[10px] font-bold ${badge.cls}`}
+                    className={`rounded-md px-2.5 py-1 text-xs font-semibold ${badge.cls}`}
                     style={badge.style}
                   >
                     {badge.label}
@@ -240,15 +200,15 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
                     <>
                       <button
                         onClick={() => onOpenEMR(apt.patient_id, { consultationActive: true, appointmentId: apt.id })}
-                        className="flex-1 rounded-[12px] border-2 py-2.5 text-xs font-bold transition-all hover:bg-[var(--brand-navy-soft)]"
-                        style={{ borderColor: "var(--neon-green)", color: "var(--neon-green)" }}
+                        className="flex-1 rounded-md border-2 py-2.5 text-xs font-semibold transition-all hover:bg-[var(--ds-action-soft)]"
+                        style={{ borderColor: "var(--ds-action)", color: "var(--ds-action)" }}
                       >
                         Abrir expediente
                       </button>
                       <button
                         onClick={() => handleEndConsultation(apt)}
                         disabled={isMutating}
-                        className="flex flex-1 items-center justify-center gap-1 rounded-[12px] bg-red-500 py-2.5 text-xs font-bold text-white transition-all hover:bg-red-600 disabled:opacity-60"
+                        className="flex flex-1 items-center justify-center gap-1 rounded-md bg-primary py-2.5 text-xs font-semibold text-primary-foreground transition-all hover:bg-primary disabled:opacity-60"
                       >
                         {isMutating && <Loader2 size={12} className="animate-spin" />}
                         Finalizar consulta
@@ -258,7 +218,7 @@ export function DoctorDashboard({ onOpenEMR, doctorId, doctorName }: DoctorDashb
                     <button
                       onClick={() => handleStartConsultation(apt)}
                       disabled={isMutating || apt.status === AppointmentStatus.COMPLETED || apt.status === AppointmentStatus.CANCELLED}
-                      className="citabox-primary-gradient flex w-full items-center justify-center gap-1 rounded-[12px] py-2.5 text-xs font-bold text-white transition-all hover:brightness-95 disabled:opacity-60"
+                      className="citabox-action flex w-full items-center justify-center gap-1 rounded-md py-2.5 text-xs font-semibold text-primary-foreground transition-all hover:brightness-95 disabled:opacity-60"
                     >
                       {isMutating && <Loader2 size={12} className="animate-spin" />}
                       Iniciar consulta

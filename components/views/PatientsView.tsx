@@ -1,6 +1,9 @@
 "use client"
+import { appointmentStatusClass, appointmentStatusLabel } from "@/lib/design"
 
-import { Fragment, useEffect, useMemo, useState } from "react"
+
+import { Fragment, useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
 import {
   AlertCircle,
   CalendarDays,
@@ -17,9 +20,8 @@ import { CITABOX_DATA_CHANGED_EVENT } from "@/lib/data-events"
 import {
   formatClinicDateTime,
   getClinicAgeFromBirthDate,
-  getClinicNowDate,
 } from "@/lib/clinic-time"
-import type { Appointment, AppointmentStatus, Patient } from "@/types/api"
+import type { Appointment, Patient } from "@/types/api"
 import { fetchPatientAppointments, fetchPatients } from "@/services/patients.service"
 
 interface PatientsViewProps {
@@ -34,14 +36,6 @@ type AppointmentState = {
   items: Appointment[]
 }
 
-const STATUS_STYLES: Record<AppointmentStatus, string> = {
-  PENDING: "bg-amber-50 text-amber-700",
-  CONFIRMED: "bg-sky-50 text-sky-700",
-  WAITING: "bg-violet-50 text-violet-700",
-  IN_CONSULTATION: "bg-indigo-50 text-indigo-700",
-  COMPLETED: "bg-emerald-50 text-emerald-700",
-  CANCELLED: "bg-rose-50 text-rose-700",
-}
 
 export function PatientsView({ onOpenEMR }: PatientsViewProps) {
   const [patients, setPatients] = useState<Patient[]>([])
@@ -102,10 +96,6 @@ export function PatientsView({ onOpenEMR }: PatientsViewProps) {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
-  const newThisMonth = useMemo(() => {
-    const monthAgo = getClinicNowDate().getTime() - 30 * 24 * 60 * 60 * 1000
-    return patients.filter((patient) => new Date(patient.createdAt).getTime() >= monthAgo).length
-  }, [patients])
 
   const loadAppointments = async (patientId: string) => {
     setAppointmentMap((prev) => ({
@@ -160,7 +150,7 @@ export function PatientsView({ onOpenEMR }: PatientsViewProps) {
     formatClinicDateTime(iso)
 
   const formatPhone = (phone?: string | null) => {
-    if (!phone) return "Sin telefono"
+    if (!phone) return "Sin teléfono"
     return phone.startsWith("+506") ? phone : `+506 ${phone}`
   }
 
@@ -169,7 +159,7 @@ export function PatientsView({ onOpenEMR }: PatientsViewProps) {
 
     if (!state || state.loading) {
       return (
-        <div className="flex items-center gap-2 px-5 py-5 text-sm text-slate-500">
+        <div className="flex items-center gap-2 px-5 py-5 text-sm text-muted-foreground">
           <Loader2 size={15} className="animate-spin" />
           Cargando historial de citas...
         </div>
@@ -178,11 +168,11 @@ export function PatientsView({ onOpenEMR }: PatientsViewProps) {
 
     if (state.error) {
       return (
-        <div className="flex items-center justify-between gap-3 px-5 py-5 text-sm text-rose-600">
+        <div className="flex items-center justify-between gap-3 px-5 py-5 text-sm text-danger">
           <span>{state.error}</span>
           <button
             onClick={() => loadAppointments(patientId)}
-            className="rounded-md border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+            className="rounded-md border border-danger px-3 py-1.5 text-xs font-semibold text-danger hover:bg-danger-bg"
           >
             Reintentar
           </button>
@@ -192,8 +182,8 @@ export function PatientsView({ onOpenEMR }: PatientsViewProps) {
 
     if (state.items.length === 0) {
       return (
-        <div className="px-5 py-5 text-sm text-slate-500">
-          Este paciente todavia no tiene citas registradas.
+        <div className="px-5 py-5 text-sm text-muted-foreground">
+          Este paciente todavía no tiene citas registradas.
         </div>
       )
     }
@@ -201,7 +191,7 @@ export function PatientsView({ onOpenEMR }: PatientsViewProps) {
     return (
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <thead className="bg-card text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-5 py-3">Fecha</th>
               <th className="px-5 py-3">Servicio</th>
@@ -209,21 +199,21 @@ export function PatientsView({ onOpenEMR }: PatientsViewProps) {
               <th className="px-5 py-3">Estado</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-border">
             {state.items.map((appointment) => (
-              <tr key={appointment.id} className="bg-white">
-                <td className="px-5 py-3 font-medium text-slate-700">
+              <tr key={appointment.id} className="bg-card">
+                <td className="px-5 py-3 font-medium text-foreground">
                   {formatLocalDateTime(appointment.start_time)}
                 </td>
-                <td className="px-5 py-3 text-slate-600">
+                <td className="px-5 py-3 text-foreground">
                   {appointment.service?.name ?? appointment.reason ?? "Cita"}
                 </td>
-                <td className="px-5 py-3 text-slate-600">
+                <td className="px-5 py-3 text-foreground">
                   Dr. {appointment.doctor.first_name} {appointment.doctor.last_name}
                 </td>
                 <td className="px-5 py-3">
-                  <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${STATUS_STYLES[appointment.status]}`}>
-                    {appointment.status}
+                  <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${appointmentStatusClass(appointment.status)}`}>
+                    {appointmentStatusLabel(appointment.status)}
                   </span>
                 </td>
               </tr>
@@ -235,24 +225,11 @@ export function PatientsView({ onOpenEMR }: PatientsViewProps) {
   }
 
   return (
-    <div className="flex h-full flex-col gap-5 overflow-y-auto rounded-[24px] bg-white/35 p-1 lg:p-2">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {[
-          { label: "Pacientes registrados", value: String(total) },
-          { label: "Pagina actual", value: `${page}/${totalPages}` },
-          { label: "Nuevos en pantalla", value: String(newThisMonth) },
-        ].map((card) => (
-          <div key={card.label} className="citabox-card p-4">
-            <p className="text-xs font-semibold text-muted-foreground">{card.label}</p>
-            <p className="mt-2 text-2xl font-extrabold text-foreground">{card.value}</p>
-          </div>
-        ))}
-      </div>
-
+    <div className="flex h-full flex-col gap-5 overflow-y-auto rounded-md bg-transparent">
       <div className="citabox-panel">
         <div className="flex flex-col gap-4 border-b border-border px-5 py-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-xl font-extrabold text-foreground">Pacientes</h2>
+            <h2 className="text-xl font-semibold text-foreground">Pacientes <span className="ml-2 text-sm font-normal text-muted-foreground">{total} registrados</span></h2>
             <p className="text-sm text-muted-foreground">
               Busca por nombre o identificación, revisa su historial de citas y abre su expediente clínico.
             </p>
@@ -264,39 +241,49 @@ export function PatientsView({ onOpenEMR }: PatientsViewProps) {
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
               placeholder="Buscar paciente por nombre o cedula"
-              className="w-full rounded-[14px] border border-border bg-[var(--surface-soft)] py-2.5 pl-10 pr-4 text-sm font-medium text-foreground outline-none transition focus:border-[var(--brand-navy)] focus:bg-white focus:ring-4 focus:ring-[var(--brand-navy-soft)]"
+              aria-label="Buscar paciente por nombre o identificación"
+              className="w-full rounded-md border border-input bg-[var(--ds-surface-alt)] py-2.5 pl-10 pr-4 text-sm font-medium text-foreground outline-none transition focus:border-[var(--ds-action)] focus:bg-card focus:ring-4 focus:ring-[var(--ds-action-soft)]"
             />
           </label>
         </div>
 
         {loading && (
-          <div className="flex items-center justify-center gap-2 px-5 py-16 text-sm text-slate-500">
+          <div className="flex items-center justify-center gap-2 px-5 py-16 text-sm text-muted-foreground">
             <Loader2 size={18} className="animate-spin" />
             Cargando pacientes...
           </div>
         )}
 
         {error && (
-          <div className="flex items-center justify-center gap-2 px-5 py-16 text-sm text-rose-600">
+          <div className="flex items-center justify-center gap-2 px-5 py-16 text-sm text-danger">
             <AlertCircle size={16} />
             <span>{error}</span>
           </div>
         )}
 
         {!loading && !error && patients.length === 0 && (
-          <div className="px-5 py-16 text-center text-sm text-slate-500">
-            No hay pacientes que coincidan con la busqueda actual.
+          <div className="px-5 py-16 text-center text-sm text-muted-foreground">
+            No hay pacientes que coincidan con la búsqueda actual.
           </div>
         )}
 
         {!loading && !error && patients.length > 0 && (
           <>
-            <div className="overflow-x-auto">
+            <div className="divide-y divide-border lg:hidden">
+              {patients.map(patient => <article key={patient.id} className="p-4">
+                <h3 className="font-semibold">{patient.first_name} {patient.last_name}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{patient.identification} · {getAge(patient.birth_date) ?? "Edad no registrada"}{getAge(patient.birth_date) !== null ? " años" : ""}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{formatPhone(patient.whatsapp_phone)}</p>
+                <div className="mt-3 flex flex-wrap gap-2"><Button variant="outline" aria-expanded={expandedPatientId === patient.id} onClick={() => toggleExpanded(patient.id)}>Historial de citas</Button>{onOpenEMR && <Button onClick={() => onOpenEMR(patient.id)}>Ver expediente</Button>}</div>
+                {expandedPatientId === patient.id && <div className="mt-4">{renderAppointments(patient.id)}</div>}
+              </article>)}
+            </div>
+            <div className="hidden overflow-x-auto lg:block">
               <table className="min-w-full">
-                <thead className="bg-[var(--surface-soft)] text-left text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                <thead className="bg-[var(--ds-surface-alt)] text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="px-5 py-3">Paciente</th>
-                    <th className="px-5 py-3">Identificacion</th>
+                    <th className="px-5 py-3">Identificación</th>
                     <th className="px-5 py-3">Edad</th>
                     <th className="px-5 py-3">Contacto</th>
                     <th className="px-5 py-3">Acciones</th>
@@ -308,14 +295,14 @@ export function PatientsView({ onOpenEMR }: PatientsViewProps) {
 
                     return (
                       <Fragment key={patient.id}>
-                        <tr key={patient.id} className="bg-white/80 align-top transition-colors hover:bg-[var(--surface-soft)]">
-                          <td className="px-5 py-4">
+                        <tr key={patient.id} className="bg-card align-top transition-colors hover:bg-[var(--ds-surface-alt)]">
+                          <td className="px-5 py-3">
                             <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--brand-navy-soft)] text-[var(--brand-navy)]">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[var(--ds-action-soft)] text-[var(--ds-action)]">
                                 <UserRound size={18} />
                               </div>
                               <div>
-                                <p className="font-bold text-foreground">
+                                <p className="font-semibold text-foreground">
                                   {patient.first_name} {patient.last_name}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
@@ -336,7 +323,8 @@ export function PatientsView({ onOpenEMR }: PatientsViewProps) {
                             <div className="flex flex-wrap items-center gap-2">
                               <button
                                 onClick={() => toggleExpanded(patient.id)}
-                                 className="inline-flex items-center gap-2 rounded-[12px] border border-border bg-card px-3 py-2 text-xs font-bold text-foreground hover:bg-[var(--brand-navy-soft)]"
+                                aria-expanded={expanded}
+                                 className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-[var(--ds-action-soft)]"
                               >
                                 <CalendarDays size={14} />
                                 Historial de citas
@@ -345,7 +333,7 @@ export function PatientsView({ onOpenEMR }: PatientsViewProps) {
                               {onOpenEMR && (
                                 <button
                                   onClick={() => onOpenEMR(patient.id)}
-                                   className="citabox-primary-gradient inline-flex items-center gap-2 rounded-[12px] px-3 py-2 text-xs font-bold text-white hover:brightness-95"
+                                   className="citabox-action inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-primary-foreground hover:brightness-95"
                                 >
                                   <FileText size={14} />
                                   Ver expediente
@@ -355,7 +343,7 @@ export function PatientsView({ onOpenEMR }: PatientsViewProps) {
                           </td>
                         </tr>
                         {expanded && (
-                          <tr className="bg-[var(--surface-soft)]/80">
+                          <tr className="bg-[var(--ds-surface-alt)]/80">
                             <td colSpan={5} className="p-0">
                               {renderAppointments(patient.id)}
                             </td>
@@ -376,18 +364,18 @@ export function PatientsView({ onOpenEMR }: PatientsViewProps) {
                 <button
                   onClick={() => setPage((current) => Math.max(1, current - 1))}
                   disabled={page === 1}
-                  className="inline-flex items-center gap-2 rounded-[12px] border border-border bg-card px-3 py-2 text-sm font-bold text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <ChevronLeft size={16} />
                   Anterior
                 </button>
-                <span className="rounded-[12px] bg-[var(--brand-navy-soft)] px-3 py-2 text-sm font-bold text-[var(--brand-navy)]">
-                  Pagina {page} de {totalPages}
+                <span className="rounded-md bg-[var(--ds-action-soft)] px-3 py-2 text-sm font-semibold text-[var(--ds-action)]">
+                  Página {page} de {totalPages}
                 </span>
                 <button
                   onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
                   disabled={page >= totalPages}
-                  className="inline-flex items-center gap-2 rounded-[12px] border border-border bg-card px-3 py-2 text-sm font-bold text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Siguiente
                   <ChevronRight size={16} />

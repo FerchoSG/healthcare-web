@@ -56,12 +56,7 @@ function patientInitials(patient: Patient) {
   return `${patient.first_name[0] ?? ""}${patient.last_name[0] ?? ""}`.toUpperCase()
 }
 
-function avatarColor(label: string) {
-  const colors = ["#008BB0", "#4ECDC4", "#45B7D1", "#96CEB4", "#F59E0B", "#8B5CF6"]
-  let hash = 0
-  for (let i = 0; i < label.length; i++) hash = label.charCodeAt(i) + ((hash << 5) - hash)
-  return colors[Math.abs(hash) % colors.length]
-}
+function avatarColor(_label: string) { return "var(--ds-action)" }
 
 function toIsoDateTime(date: string, time: string) {
   return clinicLocalDateTimeToIso(date, time)
@@ -213,7 +208,7 @@ export function NewAppointmentDialog({
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <DialogContent className="rounded-lg w-[95vw] max-w-md p-0 overflow-hidden gap-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
-          <DialogTitle className="text-base font-bold">Nueva cita</DialogTitle>
+          <DialogTitle className="text-base font-semibold">Nueva cita</DialogTitle>
           <DialogDescription className="sr-only">
             Agenda una nueva cita con datos reales de pacientes y doctores.
           </DialogDescription>
@@ -221,12 +216,12 @@ export function NewAppointmentDialog({
 
         <div className="px-6 py-5 flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
           {error && (
-            <p className="text-xs text-red-600">{error}</p>
+            <p className="text-xs text-danger">{error}</p>
           )}
 
           <div className="flex flex-col gap-1.5 relative">
-            <label className="text-xs font-semibold text-foreground">Paciente</label>
-            <input
+            <label htmlFor="modals-field-1" className="text-xs font-semibold text-foreground">Paciente</label>
+            <input id="modals-field-1"
               type="text"
               placeholder={loading ? "Cargando pacientes..." : "Buscar por nombre o cédula"}
               value={selectedPatient ? patientName(selectedPatient) : patientSearch}
@@ -236,10 +231,10 @@ export function NewAppointmentDialog({
                 setShowCombo(Boolean(e.target.value.trim()))
                 if (showNewPatientForm) setShowNewPatientForm(false)
               }}
-              className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+              className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
             />
             <div className="flex items-center justify-between gap-3">
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {selectedPatient ? `Seleccionado: ${patientName(selectedPatient)}` : "Puedes usar un paciente existente o crear uno nuevo."}
               </p>
               <button
@@ -248,13 +243,13 @@ export function NewAppointmentDialog({
                   setShowNewPatientForm((current) => !current)
                   setShowCombo(false)
                 }}
-                className="text-[11px] font-semibold text-foreground underline underline-offset-2"
+                className="text-xs font-semibold text-foreground underline underline-offset-2"
               >
                 {showNewPatientForm ? "Ocultar formulario" : "Nuevo paciente"}
               </button>
             </div>
             {showCombo && !selectedPatient && (
-              <div className="absolute top-full mt-1 left-0 right-0 z-50 bg-white border border-border rounded-md overflow-hidden shadow-xl max-h-64 overflow-y-auto">
+              <div className="absolute top-full mt-1 left-0 right-0 z-50 bg-card border border-border rounded-md overflow-hidden  max-h-64 overflow-y-auto">
                 {filteredPatients.length === 0 ? (
                   <p className="text-xs text-muted-foreground px-4 py-3">No se encontraron pacientes</p>
                 ) : (
@@ -270,14 +265,14 @@ export function NewAppointmentDialog({
                       }}
                     >
                       <div
-                        className="w-7 h-7 rounded-md flex items-center justify-center text-white text-[10px] font-bold"
+                        className="w-7 h-7 rounded-md flex items-center justify-center text-primary-foreground text-xs font-semibold"
                         style={{ backgroundColor: avatarColor(patientName(patient)) }}
                       >
                         {patientInitials(patient)}
                       </div>
                       <div>
                         <p className="text-sm font-medium text-foreground">{patientName(patient)}</p>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           {patient.identification} · {patientAge(patient)} años
                         </p>
                       </div>
@@ -290,21 +285,21 @@ export function NewAppointmentDialog({
 
           {showNewPatientForm && (
             <div className="rounded-lg border border-border bg-muted/40 p-4 flex flex-col gap-3">
-              <p className="text-xs font-bold text-foreground">Crear paciente para esta cita</p>
+              <p className="text-xs font-semibold text-foreground">Crear paciente para esta cita</p>
               <div className="grid grid-cols-2 gap-3">
                 <input
                   type="text"
                   placeholder="Nombre"
                   value={patientForm.firstName}
                   onChange={(e) => setPatientForm((prev) => ({ ...prev, firstName: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-md bg-white text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                  className="w-full px-3 py-2 rounded-md bg-card text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40"
                 />
                 <input
                   type="text"
                   placeholder="Apellido"
                   value={patientForm.lastName}
                   onChange={(e) => setPatientForm((prev) => ({ ...prev, lastName: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-md bg-white text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                  className="w-full px-3 py-2 rounded-md bg-card text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -313,14 +308,14 @@ export function NewAppointmentDialog({
                   placeholder="Identificación"
                   value={patientForm.identification}
                   onChange={(e) => setPatientForm((prev) => ({ ...prev, identification: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-md bg-white text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                  className="w-full px-3 py-2 rounded-md bg-card text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40"
                 />
                 <input
                   type="tel"
                   placeholder="WhatsApp"
                   value={patientForm.whatsapp}
                   onChange={(e) => setPatientForm((prev) => ({ ...prev, whatsapp: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-md bg-white text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                  className="w-full px-3 py-2 rounded-md bg-card text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -328,12 +323,12 @@ export function NewAppointmentDialog({
                   type="date"
                   value={patientForm.birthDate}
                   onChange={(e) => setPatientForm((prev) => ({ ...prev, birthDate: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-md bg-white text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                  className="w-full px-3 py-2 rounded-md bg-card text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40"
                 />
                 <select
                   value={patientForm.gender}
                   onChange={(e) => setPatientForm((prev) => ({ ...prev, gender: e.target.value as Gender }))}
-                  className="w-full px-3 py-2 rounded-md bg-white text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40"
+                  className="w-full px-3 py-2 rounded-md bg-card text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40"
                 >
                   <option value="F">Femenino</option>
                   <option value="M">Masculino</option>
@@ -344,7 +339,7 @@ export function NewAppointmentDialog({
                 type="button"
                 onClick={handleCreatePatientAndSelect}
                 disabled={creatingPatient}
-                className="w-full py-2.5 rounded-md bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-50"
+                className="w-full py-2.5 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-50"
               >
                 {creatingPatient ? "Creando paciente..." : "Crear y seleccionar paciente"}
               </button>
@@ -352,11 +347,11 @@ export function NewAppointmentDialog({
           )}
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-foreground">Doctor</label>
-            <select
+            <label htmlFor="modals-field-2" className="text-xs font-semibold text-foreground">Doctor</label>
+            <select id="modals-field-2"
               value={doctorId}
               onChange={(e) => setDoctorId(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+              className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
             >
               <option value="">Selecciona un doctor</option>
               {doctors.map((doctor) => (
@@ -369,20 +364,20 @@ export function NewAppointmentDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">Fecha</label>
-              <input
+              <label htmlFor="modals-field-3" className="text-xs font-semibold text-foreground">Fecha</label>
+              <input id="modals-field-3"
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+                className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">Hora</label>
-              <select
+              <label htmlFor="modals-field-4" className="text-xs font-semibold text-foreground">Hora</label>
+              <select id="modals-field-4"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+                className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
               >
                 {["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","12:00","14:00","14:30","15:00","15:30","16:00","16:30","17:00"].map((slot) => (
                   <option key={slot} value={slot}>{slot}</option>
@@ -392,13 +387,13 @@ export function NewAppointmentDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-foreground">Motivo</label>
-            <textarea
+            <label htmlFor="modals-field-5" className="text-xs font-semibold text-foreground">Motivo</label>
+            <textarea id="modals-field-5"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Describe el motivo de la cita"
               rows={3}
-              className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all resize-none"
+              className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all resize-none"
             />
           </div>
         </div>
@@ -410,7 +405,7 @@ export function NewAppointmentDialog({
               resetForm(doctors)
               onClose()
             }}
-            className="flex-1 py-2.5 rounded-md bg-muted shadow-sm text-muted-foreground text-sm font-semibold hover:text-foreground transition-all"
+            className="flex-1 py-2.5 rounded-md bg-muted  text-muted-foreground text-sm font-semibold hover:text-foreground transition-all"
           >
             Cancelar
           </button>
@@ -418,7 +413,7 @@ export function NewAppointmentDialog({
             type="button"
             onClick={handleSave}
             disabled={saving || loading}
-            className="flex-1 py-2.5 rounded-md bg-foreground shadow-sm text-background text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-md bg-primary  text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
           >
             {saving ? "Guardando..." : "Guardar cita"}
           </button>
@@ -493,65 +488,65 @@ export function WalkInSheet({ open, onClose }: WalkInSheetProps) {
     <Sheet open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <SheetContent side="right" className="w-full sm:w-[420px] sm:rounded-l-3xl p-0 flex flex-col">
         <SheetHeader className="px-6 pt-6 pb-4 border-b border-border">
-          <SheetTitle className="text-base font-bold">Registro rápido</SheetTitle>
+          <SheetTitle className="text-base font-semibold">Registro rápido</SheetTitle>
           <SheetDescription className="text-xs text-muted-foreground">
             Crea un paciente real en la clínica actual.
           </SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4">
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <p className="text-xs text-danger">{error}</p>}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">Nombre</label>
-              <input
+              <label htmlFor="modals-field-6" className="text-xs font-semibold text-foreground">Nombre</label>
+              <input id="modals-field-6"
                 type="text"
                 value={form.firstName}
                 onChange={set("firstName")}
                 placeholder="María"
-                className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+                className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">Apellido</label>
-              <input
+              <label htmlFor="modals-field-7" className="text-xs font-semibold text-foreground">Apellido</label>
+              <input id="modals-field-7"
                 type="text"
                 value={form.lastName}
                 onChange={set("lastName")}
                 placeholder="Gonzalez"
-                className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+                className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
               />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-foreground">Cédula</label>
-            <input
+            <label htmlFor="modals-field-8" className="text-xs font-semibold text-foreground">Cédula</label>
+            <input id="modals-field-8"
               type="text"
               value={form.identification}
               onChange={set("identification")}
               placeholder="1-0000-0000"
-              className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+              className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">Nacimiento</label>
-              <input
+              <label htmlFor="modals-field-9" className="text-xs font-semibold text-foreground">Nacimiento</label>
+              <input id="modals-field-9"
                 type="date"
                 value={form.birthDate}
                 onChange={set("birthDate")}
-                className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+                className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-foreground">Género</label>
-              <select
+              <label htmlFor="modals-field-10" className="text-xs font-semibold text-foreground">Género</label>
+              <select id="modals-field-10"
                 value={form.gender}
                 onChange={set("gender")}
-                className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+                className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
               >
                 <option value="F">Femenino</option>
                 <option value="M">Masculino</option>
@@ -561,13 +556,13 @@ export function WalkInSheet({ open, onClose }: WalkInSheetProps) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-foreground">WhatsApp</label>
-            <input
+            <label htmlFor="modals-field-11" className="text-xs font-semibold text-foreground">WhatsApp</label>
+            <input id="modals-field-11"
               type="tel"
               value={form.whatsapp}
               onChange={set("whatsapp")}
               placeholder="+506 8888-8888"
-              className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-border outline-none focus:ring-2 focus:ring-ring/40 transition-all"
+              className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
             />
           </div>
         </div>
@@ -579,7 +574,7 @@ export function WalkInSheet({ open, onClose }: WalkInSheetProps) {
               reset()
               onClose()
             }}
-            className="flex-1 py-2.5 rounded-md bg-muted shadow-sm text-muted-foreground text-sm font-semibold hover:text-foreground transition-all"
+            className="flex-1 py-2.5 rounded-md bg-muted  text-muted-foreground text-sm font-semibold hover:text-foreground transition-all"
           >
             Cancelar
           </button>
@@ -587,7 +582,7 @@ export function WalkInSheet({ open, onClose }: WalkInSheetProps) {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 py-2.5 rounded-md bg-foreground shadow-sm text-background text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-md bg-primary  text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
           >
             {saving ? "Guardando..." : "Registrar paciente"}
           </button>
