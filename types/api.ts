@@ -226,6 +226,7 @@ export type AppointmentEmailResult =
 
 export interface Appointment {
   id: string;
+  reference?: string;
   clinic_id: string;
   patient_id: string;
   doctor_id: string;
@@ -388,6 +389,7 @@ export interface CreateBookingPayload {
 }
 
 export interface BookingConfirmation {
+  reference?: string;
   email_confirmation?: AppointmentEmailResult;
   id: string;
   status: AppointmentStatus;

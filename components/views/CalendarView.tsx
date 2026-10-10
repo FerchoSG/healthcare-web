@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog"
 import {
   fetchAppointments,
+  fetchAppointmentByReference,
   fetchTimeBlocks,
   updateAppointmentStatus,
   deleteAppointment,
@@ -34,6 +35,8 @@ import { appointmentStatusClass, appointmentStatusLabel } from "@/lib/design"
 import { fetchDoctors } from "@/services/clinic-services.service"
 import type { DoctorSummary } from "@/types/api"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { HttpError } from "@/lib/api-client"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -116,6 +119,30 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
 
   const [saving, setSaving] = useState(false)
+  const [referenceSearch, setReferenceSearch] = useState("")
+  const [findingReference, setFindingReference] = useState(false)
+  const [referenceError, setReferenceError] = useState<string | null>(null)
+
+  const findReference = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (findingReference) return
+    const code = referenceSearch.toUpperCase().replace(/[\s-]/g, "")
+    if (!/^CB[A-Z2-9]{8}$/.test(code)) {
+      setReferenceError("Ingresa una referencia con el formato CB-XXXX-XXXX.")
+      return
+    }
+    setFindingReference(true)
+    setReferenceError(null)
+    try {
+      const appointment = await fetchAppointmentByReference(referenceSearch)
+      setSelectedAppointment(appointment)
+      setEditDialogOpen(true)
+    } catch (error) {
+      setReferenceError(error instanceof HttpError && error.status === 404
+        ? "No se encontró una cita con esa referencia en esta clínica."
+        : "No se pudo buscar la cita. Revisa tu conexión e intenta de nuevo.")
+    } finally { setFindingReference(false) }
+  }
 
   // ── Week dates ─────────────────────────────────────────────────────────────
 
@@ -301,6 +328,16 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
 
   return (
     <div className="flex h-full flex-col gap-5 overflow-y-auto rounded-md bg-transparent">
+
+      <form onSubmit={findReference} className="citabox-panel p-4">
+        <label htmlFor="appointment-reference-search" className="mb-2 block text-sm font-medium">Buscar cita por referencia</label>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input id="appointment-reference-search" className="h-11 shadow-none sm:max-w-xs" placeholder="CB-7K9P-3M8H" autoComplete="off" maxLength={32} value={referenceSearch} onChange={event => { setReferenceSearch(event.target.value); setReferenceError(null) }} aria-describedby="appointment-reference-help" aria-invalid={!!referenceError} />
+          <Button className="h-11" type="submit" disabled={findingReference || !referenceSearch.trim()}>{findingReference ? "Buscando…" : "Buscar cita"}</Button>
+        </div>
+        <p id="appointment-reference-help" className="mt-2 text-xs text-muted-foreground">Busca en todas las fechas de la clínica activa usando el código del comprobante.</p>
+        {referenceError && <p role="alert" className="mt-2 text-sm text-danger">{referenceError}</p>}
+      </form>
 
       {/* ── Main calendar card ───────────────────────────────────────────── */}
       <div
@@ -501,6 +538,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
                       <p className="text-xs font-semibold text-foreground truncate">
                         {apt.patient.first_name} {apt.patient.last_name}
                       </p>
+                      {apt.reference && <p className="mt-1 font-mono text-xs text-muted-foreground">{apt.reference}</p>}
                       <p className="text-xs text-muted-foreground">
                         {formatClinicDateFromKey(toClinicLocal(apt.start_time).dateKey, { day: "numeric", month: "short" })} · {timeKey} — {apt.service?.name ?? apt.reason ?? ""}
                       </p>
@@ -613,6 +651,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
           {selectedAppointment && (
             <>
               <div className="px-6 py-5 flex flex-col gap-3">
+                {selectedAppointment.reference && <InfoRow label="Referencia"><span className="font-mono">{selectedAppointment.reference}</span></InfoRow>}
                 <InfoRow label="Paciente">
                   {selectedAppointment.patient.first_name}{" "}
                   {selectedAppointment.patient.last_name}

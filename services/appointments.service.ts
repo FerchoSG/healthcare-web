@@ -35,6 +35,11 @@ export function fetchAppointments(
   return api.get<Appointment[]>(`/appointments${qs ? `?${qs}` : ""}`);
 }
 
+/** Find a reference across all dates, within the authenticated clinic. */
+export function fetchAppointmentByReference(reference: string): Promise<Appointment> {
+  return api.get<Appointment>(`/appointments/reference/${encodeURIComponent(reference.trim())}`);
+}
+
 /** Fetch today's appointments. */
 export function fetchTodayAppointments(): Promise<Appointment[]> {
   const today = getClinicTodayKey();

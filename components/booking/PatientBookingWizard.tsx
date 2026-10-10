@@ -421,6 +421,12 @@ function SuccessScreen({ booking, confirmation, service, onHome }: {
         <p className="mb-4 text-sm font-semibold text-[var(--ds-action)]">Guardá los detalles de tu solicitud.</p>
         <p role="status" className="mb-8 text-sm text-muted-foreground">{appointmentEmailMessage(confirmation.email_confirmation)}</p>
 
+        {confirmation.reference && <div className="mb-6 w-full rounded-lg border border-border bg-accent px-5 py-4 text-left">
+          <p className="text-xs font-semibold text-muted-foreground">Referencia de tu cita</p>
+          <p className="mt-1 font-mono text-xl font-semibold text-primary">{confirmation.reference}</p>
+          <p className="mt-2 text-sm text-muted-foreground">Indica este código a recepción para localizar tu cita.</p>
+        </div>}
+
         {/* Summary card */}
         <div className="w-full rounded-lg bg-card border border-border overflow-hidden mb-8 text-left">
           <div className="citabox-action px-5 py-4">

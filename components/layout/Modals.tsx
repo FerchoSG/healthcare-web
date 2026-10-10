@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -92,6 +92,9 @@ export function NewAppointmentDialog({
   const [saving, setSaving] = useState(false)
   const [creatingPatient, setCreatingPatient] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const openerRef = useRef<HTMLElement | null>(null)
+  const rememberOpener = () => { openerRef.current = document.activeElement as HTMLElement | null }
+  const restoreFocus = (event: Event) => { event.preventDefault(); openerRef.current?.focus() }
 
   const resetForm = (nextDoctors: DoctorSummary[] = []) => {
     setPatients((prev) => prev)
@@ -225,10 +228,14 @@ export function NewAppointmentDialog({
 
   if (createdAppointment) return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DialogContent>
+      <DialogContent onOpenAutoFocus={rememberOpener} onCloseAutoFocus={restoreFocus}>
         <DialogHeader><DialogTitle>Cita guardada</DialogTitle><DialogDescription>La cita está registrada en la agenda de la clínica.</DialogDescription></DialogHeader>
         <p role="status" className="text-sm text-foreground">{appointmentEmailMessage(createdAppointment.email_confirmation)}</p>
         <p className="text-sm text-muted-foreground">Estado: pendiente de confirmación.</p>
+        {createdAppointment.reference && <div className="rounded-md border border-border bg-accent p-4">
+          <p className="text-xs font-semibold text-muted-foreground">Referencia de la cita</p>
+          <p className="mt-1 font-mono text-xl font-semibold text-primary">{createdAppointment.reference}</p>
+        </div>}
         <DialogFooter><Button onClick={onClose}>Listo</Button></DialogFooter>
       </DialogContent>
     </Dialog>
@@ -236,7 +243,7 @@ export function NewAppointmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DialogContent className="rounded-lg w-[95vw] max-w-md p-0 overflow-hidden gap-0">
+      <DialogContent onOpenAutoFocus={rememberOpener} onCloseAutoFocus={restoreFocus} className="rounded-lg w-[95vw] max-w-md p-0 overflow-hidden gap-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
           <DialogTitle className="text-base font-semibold">Nueva cita</DialogTitle>
           <DialogDescription className="sr-only">
