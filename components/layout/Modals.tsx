@@ -384,7 +384,7 @@ export function NewAppointmentDialog({
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="appointment-patient-email" className="text-xs font-semibold text-foreground">Correo del paciente (opcional)</label>
-            <Input className="h-11 shadow-none" id="appointment-patient-email" type="email" autoComplete="email" maxLength={254} disabled={!selectedPatient} value={patientEmail} onChange={(e) => setPatientEmail(e.target.value)} aria-describedby="appointment-email-help" aria-invalid={!isValidOptionalEmail(patientEmail)} />
+            <Input className="h-11 shadow-none" id="appointment-patient-email" type="email" autoComplete="email" maxLength={254} disabled={!selectedPatient} value={patientEmail} onChange={(e) => { setPatientEmail(e.target.value); setError(null) }} aria-describedby="appointment-email-help" aria-invalid={!isValidOptionalEmail(patientEmail)} />
             <p id="appointment-email-help" className="text-xs text-muted-foreground">Lo guardaremos en el paciente y enviaremos el comprobante de la cita. Si queda vacío, no se enviará correo.</p>
           </div>
 
@@ -404,7 +404,7 @@ export function NewAppointmentDialog({
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="modals-field-3" className="text-xs font-semibold text-foreground">Fecha</label>
               <input id="modals-field-3"
