@@ -30,6 +30,8 @@ import {
   createBooking,
 } from "@/services/booking.service"
 import { BRAND_NAME } from "@/lib/brand"
+import { Input } from "@/components/ui/input"
+import { appointmentEmailMessage, isValidOptionalEmail } from "@/lib/appointment-email"
 import { formatClinicDateFromKey, getClinicTodayKey, parseClinicDateKey } from "@/lib/clinic-time"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -43,6 +45,7 @@ export interface BookingFormData {
   lastName: string
   cedula: string
   whatsapp: string
+  email: string
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -54,7 +57,7 @@ const AVATAR_COLORS = ["var(--ds-action-soft)"]
 
 const EMPTY_BOOKING: BookingFormData = {
   serviceId: "", doctorId: "any", date: "", time: "",
-  firstName: "", lastName: "", cedula: "", whatsapp: "",
+  firstName: "", lastName: "", cedula: "", whatsapp: "", email: "",
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -415,7 +418,8 @@ function SuccessScreen({ booking, confirmation, service, onHome }: {
         <p className="text-muted-foreground text-sm leading-relaxed mb-1">
           La clínica revisará tu solicitud. Podés consultar el estado por sus canales de contacto.
         </p>
-        <p className="mb-8 text-sm font-semibold text-[var(--ds-action)]">Guardá los detalles de tu solicitud.</p>
+        <p className="mb-4 text-sm font-semibold text-[var(--ds-action)]">Guardá los detalles de tu solicitud.</p>
+        <p role="status" className="mb-8 text-sm text-muted-foreground">{appointmentEmailMessage(confirmation.email_confirmation)}</p>
 
         {/* Summary card */}
         <div className="w-full rounded-lg bg-card border border-border overflow-hidden mb-8 text-left">
@@ -433,10 +437,11 @@ function SuccessScreen({ booking, confirmation, service, onHome }: {
               { label: "Doctor",   value: `Dr. ${confirmation.doctor.first_name} ${confirmation.doctor.last_name}` },
               { label: "Paciente", value: `${booking.firstName} ${booking.lastName}` },
               { label: "WhatsApp", value: `+506 ${booking.whatsapp}` },
+              { label: "Correo", value: booking.email.trim() || "No indicado" },
             ].map(({ label, value }) => (
               <div key={label} className="flex items-center justify-between px-5 py-3">
                 <span className="text-xs text-muted-foreground font-medium">{label}</span>
-                <span className="text-sm font-semibold text-foreground">{value}</span>
+                <span className="min-w-0 break-all text-right text-sm font-semibold text-foreground">{value}</span>
               </div>
             ))}
           </div>
@@ -596,7 +601,7 @@ export function PatientBookingWizard({
     booking.firstName &&
     booking.lastName &&
     booking.cedula &&
-    /^\d{8}$/.test(booking.whatsapp)
+    /^\d{8}$/.test(booking.whatsapp) && isValidOptionalEmail(booking.email)
   )
 
   const handleReservar = useCallback(async () => {
@@ -624,6 +629,7 @@ export function PatientBookingWizard({
         last_name: booking.lastName,
         identification: booking.cedula,
         whatsapp_phone: booking.whatsapp || undefined,
+        email: booking.email.trim() || undefined,
       })
       setConfirmation(conf)
       setStep(99)
@@ -674,7 +680,7 @@ export function PatientBookingWizard({
   const infoStepContent = (
     <div>
       <h2 className="text-xl font-semibold text-foreground mb-1">Tus datos</h2>
-      <p className="text-sm text-muted-foreground mb-5">Los usaremos para confirmar tu cita</p>
+      <p className="text-sm text-muted-foreground mb-5">Los usaremos para registrar tu solicitud y contactarte.</p>
       <div className="flex flex-col gap-4">
         <div>
           <label htmlFor="firstName" className="block text-xs font-semibold text-foreground mb-1.5">Nombre</label>
@@ -729,6 +735,11 @@ export function PatientBookingWizard({
           </div>
           <p className="text-xs text-muted-foreground mt-1.5">Ingresa 8 dígitos para que la clínica pueda contactarte.</p>
         </div>
+        <div>
+          <label htmlFor="booking-email" className="mb-1.5 block text-xs font-semibold text-foreground">Correo electrónico (opcional)</label>
+          <Input id="booking-email" type="email" autoComplete="email" maxLength={254} value={booking.email} onChange={e => update({ email: e.target.value })} aria-describedby="booking-email-help" aria-invalid={!isValidOptionalEmail(booking.email)} />
+          <p id="booking-email-help" className="mt-1.5 text-xs text-muted-foreground">{isValidOptionalEmail(booking.email) ? "Recibirás un comprobante de la solicitud. La clínica debe confirmar la cita antes de que asistas." : "Revisa el correo electrónico antes de continuar."}</p>
+        </div>
       </div>
     </div>
   )
@@ -753,10 +764,11 @@ export function PatientBookingWizard({
             { label: "Paciente", value: `${booking.firstName} ${booking.lastName}` },
             { label: "Cédula",   value: booking.cedula },
             { label: "WhatsApp", value: `+506 ${booking.whatsapp}` },
+            { label: "Correo", value: booking.email.trim() || "No indicado" },
           ].map(({ label, value }) => (
             <div key={label} className="flex items-center justify-between px-5 py-3">
               <span className="text-xs text-muted-foreground font-medium">{label}</span>
-              <span className="text-sm font-semibold text-foreground">{value}</span>
+              <span className="min-w-0 break-all text-right text-sm font-semibold text-foreground">{value}</span>
             </div>
           ))}
         </div>

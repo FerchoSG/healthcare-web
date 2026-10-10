@@ -204,6 +204,7 @@ export interface Patient {
   birth_date: string | null;
   gender: Gender | null;
   whatsapp_phone: string | null;
+  email?: string | null;
   emergency_contact: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
@@ -218,6 +219,11 @@ export interface PatientSummary {
 
 // ─── Appointment ──────────────────────────────────────────────────────────────
 
+export type AppointmentEmailResult =
+  | { status: "sent"; provider_id: string }
+  | { status: "skipped"; reason: "missing_email" | "resend_not_configured" }
+  | { status: "failed"; reason: "email_request_failed" };
+
 export interface Appointment {
   id: string;
   clinic_id: string;
@@ -229,6 +235,7 @@ export interface Appointment {
   status: AppointmentStatus;
   reason: string | null;
   reminder_sent: boolean;
+  email_confirmation?: AppointmentEmailResult;
   createdAt: string;
   updatedAt: string;
   patient: PatientSummary;
@@ -243,6 +250,7 @@ export interface CreateAppointmentPayload {
   end_time: string;
   reason?: string;
   service_id?: string;
+  patient_email?: string | null;
 }
 
 // ─── Medical Record ───────────────────────────────────────────────────────────
@@ -376,9 +384,11 @@ export interface CreateBookingPayload {
   last_name: string;
   identification: string;
   whatsapp_phone?: string;
+  email?: string;
 }
 
 export interface BookingConfirmation {
+  email_confirmation?: AppointmentEmailResult;
   id: string;
   status: AppointmentStatus;
   start_time: string;

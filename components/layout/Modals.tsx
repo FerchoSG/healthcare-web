@@ -27,7 +27,10 @@ import { createAppointment } from "@/services/appointments.service"
 import { fetchDoctors } from "@/services/clinic-services.service"
 import { createPatient, fetchPatients } from "@/services/patients.service"
 import { Gender } from "@/types/api"
-import type { DoctorSummary, Patient } from "@/types/api"
+import type { Appointment, DoctorSummary, Patient } from "@/types/api"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { appointmentEmailMessage, isValidOptionalEmail } from "@/lib/appointment-email"
 
 interface NewAppointmentDialogProps {
   open: boolean
@@ -40,6 +43,7 @@ const EMPTY_PATIENT_FORM = {
   lastName: "",
   identification: "",
   whatsapp: "",
+  email: "",
   birthDate: "",
   gender: Gender.F,
 }
@@ -75,6 +79,8 @@ export function NewAppointmentDialog({
   const [doctors, setDoctors] = useState<DoctorSummary[]>([])
   const [patientSearch, setPatientSearch] = useState("")
   const [selectedPatientId, setSelectedPatientId] = useState("")
+  const [patientEmail, setPatientEmail] = useState("")
+  const [createdAppointment, setCreatedAppointment] = useState<Appointment | null>(null)
   const [doctorId, setDoctorId] = useState("")
   const [date, setDate] = useState(preselectedSlot?.date || getClinicTodayKey())
   const [time, setTime] = useState(preselectedSlot?.time || "09:00")
@@ -91,6 +97,8 @@ export function NewAppointmentDialog({
     setPatients((prev) => prev)
     setPatientSearch("")
     setSelectedPatientId("")
+    setPatientEmail("")
+    setCreatedAppointment(null)
     setReason("")
     setShowCombo(false)
     setShowNewPatientForm(false)
@@ -139,6 +147,10 @@ export function NewAppointmentDialog({
   const selectedPatient = patients.find((patient) => patient.id === selectedPatientId) ?? null
 
   const handleSave = async () => {
+    if (!isValidOptionalEmail(patientEmail)) {
+      setError("Revisa el correo electrónico del paciente")
+      return
+    }
     const missing: string[] = []
     if (!selectedPatientId) missing.push("paciente")
     if (!doctorId) missing.push("doctor")
@@ -156,16 +168,17 @@ export function NewAppointmentDialog({
     try {
       setSaving(true)
       setError(null)
-      await createAppointment({
+      const created = await createAppointment({
         patient_id: selectedPatientId,
         doctor_id: doctorId,
         start_time: startTime,
         end_time: endTime,
         reason: reason || undefined,
+        patient_email: patientEmail.trim() || null,
       })
       emitDataChanged({ entity: "appointment", action: "created" })
       resetForm(doctors)
-      onClose()
+      setCreatedAppointment(created)
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo crear la cita")
     } finally {
@@ -174,6 +187,10 @@ export function NewAppointmentDialog({
   }
 
   const handleCreatePatientAndSelect = async () => {
+    if (!isValidOptionalEmail(patientForm.email)) {
+      setError("Revisa el correo electrónico del paciente")
+      return
+    }
     if (!patientForm.firstName || !patientForm.lastName || !patientForm.identification || !patientForm.birthDate) {
       setError("Completa nombre, apellido, identificación y fecha de nacimiento del paciente")
       return
@@ -189,10 +206,12 @@ export function NewAppointmentDialog({
         birth_date: patientForm.birthDate,
         gender: patientForm.gender,
         whatsapp_phone: patientForm.whatsapp || undefined,
+        email: patientForm.email.trim() || undefined,
       })
       emitDataChanged({ entity: "patient", action: "created" })
       setPatients((prev) => [created, ...prev])
       setSelectedPatientId(created.id)
+      setPatientEmail(created.email || "")
       setPatientSearch("")
       setShowCombo(false)
       setShowNewPatientForm(false)
@@ -203,6 +222,17 @@ export function NewAppointmentDialog({
       setCreatingPatient(false)
     }
   }
+
+  if (createdAppointment) return (
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Cita guardada</DialogTitle><DialogDescription>La cita está registrada en la agenda de la clínica.</DialogDescription></DialogHeader>
+        <p role="status" className="text-sm text-foreground">{appointmentEmailMessage(createdAppointment.email_confirmation)}</p>
+        <p className="text-sm text-muted-foreground">Estado: pendiente de confirmación.</p>
+        <DialogFooter><Button onClick={onClose}>Listo</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
@@ -228,6 +258,7 @@ export function NewAppointmentDialog({
               onChange={(e) => {
                 setPatientSearch(e.target.value)
                 setSelectedPatientId("")
+                setPatientEmail("")
                 setShowCombo(Boolean(e.target.value.trim()))
                 if (showNewPatientForm) setShowNewPatientForm(false)
               }}
@@ -260,6 +291,7 @@ export function NewAppointmentDialog({
                       className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-muted transition-all"
                       onMouseDown={() => {
                         setSelectedPatientId(patient.id)
+                        setPatientEmail(patient.email || "")
                         setPatientSearch("")
                         setShowCombo(false)
                       }}
@@ -286,6 +318,10 @@ export function NewAppointmentDialog({
           {showNewPatientForm && (
             <div className="rounded-lg border border-border bg-muted/40 p-4 flex flex-col gap-3">
               <p className="text-xs font-semibold text-foreground">Crear paciente para esta cita</p>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="new-patient-email" className="text-xs font-semibold text-foreground">Correo electrónico (opcional)</label>
+                <Input id="new-patient-email" type="email" autoComplete="email" maxLength={254} value={patientForm.email} onChange={(e) => setPatientForm((prev) => ({ ...prev, email: e.target.value }))} />
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <input
                   type="text"
@@ -345,6 +381,12 @@ export function NewAppointmentDialog({
               </button>
             </div>
           )}
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="appointment-patient-email" className="text-xs font-semibold text-foreground">Correo del paciente (opcional)</label>
+            <Input id="appointment-patient-email" type="email" autoComplete="email" maxLength={254} disabled={!selectedPatient} value={patientEmail} onChange={(e) => setPatientEmail(e.target.value)} aria-describedby="appointment-email-help" aria-invalid={!isValidOptionalEmail(patientEmail)} />
+            <p id="appointment-email-help" className="text-xs text-muted-foreground">Lo guardaremos en el paciente y enviaremos el comprobante de la cita. Si queda vacío, no se enviará correo.</p>
+          </div>
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="modals-field-2" className="text-xs font-semibold text-foreground">Doctor</label>
@@ -434,6 +476,7 @@ export function WalkInSheet({ open, onClose }: WalkInSheetProps) {
     lastName: "",
     identification: "",
     whatsapp: "",
+    email: "",
     birthDate: "",
     gender: Gender.F,
   })
@@ -451,6 +494,7 @@ export function WalkInSheet({ open, onClose }: WalkInSheetProps) {
       lastName: "",
       identification: "",
       whatsapp: "",
+      email: "",
       birthDate: "",
       gender: Gender.F,
     })
@@ -458,6 +502,10 @@ export function WalkInSheet({ open, onClose }: WalkInSheetProps) {
   }
 
   const handleSave = async () => {
+    if (!isValidOptionalEmail(form.email)) {
+      setError("Revisa el correo electrónico del paciente")
+      return
+    }
     if (!form.firstName || !form.lastName || !form.identification || !form.birthDate) {
       setError("Completa nombre, cédula y fecha de nacimiento")
       return
@@ -473,6 +521,7 @@ export function WalkInSheet({ open, onClose }: WalkInSheetProps) {
         birth_date: form.birthDate,
         gender: form.gender,
         whatsapp_phone: form.whatsapp || undefined,
+        email: form.email.trim() || undefined,
       })
       emitDataChanged({ entity: "patient", action: "created" })
       reset()
@@ -564,6 +613,10 @@ export function WalkInSheet({ open, onClose }: WalkInSheetProps) {
               placeholder="+506 8888-8888"
               className="w-full px-4 py-2.5 rounded-md bg-muted text-foreground text-sm placeholder:text-muted-foreground border border-input outline-none focus:ring-2 focus:ring-ring/40 transition-all"
             />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="walk-in-email" className="text-xs font-semibold text-foreground">Correo electrónico (opcional)</label>
+            <Input id="walk-in-email" type="email" autoComplete="email" maxLength={254} value={form.email} onChange={set("email")} />
           </div>
         </div>
 

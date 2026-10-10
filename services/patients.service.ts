@@ -14,6 +14,7 @@ export interface CreatePatientPayload {
   birth_date: string;
   gender: Gender;
   whatsapp_phone?: string;
+  email?: string;
   emergency_contact?: Record<string, unknown>;
 }
 
