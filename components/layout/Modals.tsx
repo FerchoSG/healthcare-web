@@ -320,7 +320,7 @@ export function NewAppointmentDialog({
               <p className="text-xs font-semibold text-foreground">Crear paciente para esta cita</p>
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="new-patient-email" className="text-xs font-semibold text-foreground">Correo electrónico (opcional)</label>
-                <Input id="new-patient-email" type="email" autoComplete="email" maxLength={254} value={patientForm.email} onChange={(e) => setPatientForm((prev) => ({ ...prev, email: e.target.value }))} />
+                <Input className="h-11 shadow-none" id="new-patient-email" type="email" autoComplete="email" maxLength={254} value={patientForm.email} onChange={(e) => setPatientForm((prev) => ({ ...prev, email: e.target.value }))} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <input
@@ -384,7 +384,7 @@ export function NewAppointmentDialog({
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="appointment-patient-email" className="text-xs font-semibold text-foreground">Correo del paciente (opcional)</label>
-            <Input id="appointment-patient-email" type="email" autoComplete="email" maxLength={254} disabled={!selectedPatient} value={patientEmail} onChange={(e) => setPatientEmail(e.target.value)} aria-describedby="appointment-email-help" aria-invalid={!isValidOptionalEmail(patientEmail)} />
+            <Input className="h-11 shadow-none" id="appointment-patient-email" type="email" autoComplete="email" maxLength={254} disabled={!selectedPatient} value={patientEmail} onChange={(e) => setPatientEmail(e.target.value)} aria-describedby="appointment-email-help" aria-invalid={!isValidOptionalEmail(patientEmail)} />
             <p id="appointment-email-help" className="text-xs text-muted-foreground">Lo guardaremos en el paciente y enviaremos el comprobante de la cita. Si queda vacío, no se enviará correo.</p>
           </div>
 
@@ -616,7 +616,7 @@ export function WalkInSheet({ open, onClose }: WalkInSheetProps) {
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="walk-in-email" className="text-xs font-semibold text-foreground">Correo electrónico (opcional)</label>
-            <Input id="walk-in-email" type="email" autoComplete="email" maxLength={254} value={form.email} onChange={set("email")} />
+            <Input className="h-11 shadow-none" id="walk-in-email" type="email" autoComplete="email" maxLength={254} value={form.email} onChange={set("email")} />
           </div>
         </div>
 

@@ -77,13 +77,13 @@ test.describe("QA funcional - booking publico", () => {
     await page.getByRole("button", { name: availableHour! }).click();
     await page.getByRole("button", { name: "Continuar" }).click();
 
-    const whatsapp = page.locator("#whatsapp").filter({ visible: true });
+    const whatsapp = page.getByLabel("WhatsApp", { exact: true }).filter({ visible: true });
     await whatsapp.fill("abc888812345");
     await expect(whatsapp).toHaveValue("88881234");
 
-    await page.locator("#firstName").filter({ visible: true }).fill("QA");
-    await page.locator("#lastName").filter({ visible: true }).fill("Paciente");
-    await page.locator("#cedula").filter({ visible: true }).fill(`QA-UI-${Date.now()}`);
+    await page.getByLabel("Nombre", { exact: true }).filter({ visible: true }).fill("QA");
+    await page.getByLabel("Apellido", { exact: true }).filter({ visible: true }).fill("Paciente");
+    await page.getByLabel("Cédula / DIMEX", { exact: true }).filter({ visible: true }).fill(`QA-UI-${Date.now()}`);
     await expect(page.getByRole("button", { name: "Revisar Cita" })).toBeEnabled();
     await page.getByRole("button", { name: "Revisar Cita" }).click();
     await page.getByRole("button", { name: "Reservar" }).click();

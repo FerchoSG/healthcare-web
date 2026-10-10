@@ -677,15 +677,15 @@ export function PatientBookingWizard({
     </div>
   )
 
-  const infoStepContent = (
+  const infoStepContent = (layout: "mobile" | "desktop") => (
     <div>
       <h2 className="text-xl font-semibold text-foreground mb-1">Tus datos</h2>
       <p className="text-sm text-muted-foreground mb-5">Los usaremos para registrar tu solicitud y contactarte.</p>
       <div className="flex flex-col gap-4">
         <div>
-          <label htmlFor="firstName" className="block text-xs font-semibold text-foreground mb-1.5">Nombre</label>
+          <label htmlFor={`${layout}-firstName`} className="block text-xs font-semibold text-foreground mb-1.5">Nombre</label>
           <input
-            id="firstName" autoComplete="given-name"
+            id={`${layout}-firstName`} autoComplete="given-name"
             type="text"
             placeholder="Ej. Maria"
             value={booking.firstName}
@@ -694,9 +694,9 @@ export function PatientBookingWizard({
           />
         </div>
         <div>
-          <label htmlFor="lastName" className="block text-xs font-semibold text-foreground mb-1.5">Apellido</label>
+          <label htmlFor={`${layout}-lastName`} className="block text-xs font-semibold text-foreground mb-1.5">Apellido</label>
           <input
-            id="lastName" autoComplete="family-name"
+            id={`${layout}-lastName`} autoComplete="family-name"
             type="text"
             placeholder="Ej. Fernandez"
             value={booking.lastName}
@@ -705,9 +705,9 @@ export function PatientBookingWizard({
           />
         </div>
         <div>
-          <label htmlFor="cedula" className="block text-xs font-semibold text-foreground mb-1.5">Cédula / DIMEX</label>
+          <label htmlFor={`${layout}-cedula`} className="block text-xs font-semibold text-foreground mb-1.5">Cédula / DIMEX</label>
           <input
-            id="cedula"
+            id={`${layout}-cedula`}
             type="text"
             placeholder="Ej. 1-2345-6789"
             value={booking.cedula}
@@ -716,14 +716,14 @@ export function PatientBookingWizard({
           />
         </div>
         <div>
-          <label htmlFor="whatsapp" className="block text-xs font-semibold text-foreground mb-1.5">WhatsApp</label>
+          <label htmlFor={`${layout}-whatsapp`} className="block text-xs font-semibold text-foreground mb-1.5">WhatsApp</label>
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none">
               <MessageCircle size={14} className="text-success" />
               <span className="text-muted-foreground text-sm">+506</span>
             </div>
             <input
-              id="whatsapp" autoComplete="tel-national"
+              id={`${layout}-whatsapp`} autoComplete="tel-national"
               type="tel"
               inputMode="numeric"
               pattern="[0-9]{8}"
@@ -736,9 +736,9 @@ export function PatientBookingWizard({
           <p className="text-xs text-muted-foreground mt-1.5">Ingresa 8 dígitos para que la clínica pueda contactarte.</p>
         </div>
         <div>
-          <label htmlFor="booking-email" className="mb-1.5 block text-xs font-semibold text-foreground">Correo electrónico (opcional)</label>
-          <Input id="booking-email" type="email" autoComplete="email" maxLength={254} value={booking.email} onChange={e => update({ email: e.target.value })} aria-describedby="booking-email-help" aria-invalid={!isValidOptionalEmail(booking.email)} />
-          <p id="booking-email-help" className="mt-1.5 text-xs text-muted-foreground">{isValidOptionalEmail(booking.email) ? "Recibirás un comprobante de la solicitud. La clínica debe confirmar la cita antes de que asistas." : "Revisa el correo electrónico antes de continuar."}</p>
+          <label htmlFor={`${layout}-booking-email`} className="mb-1.5 block text-xs font-semibold text-foreground">Correo electrónico (opcional)</label>
+          <Input id={`${layout}-booking-email`} className="h-11 shadow-none" type="email" autoComplete="email" maxLength={254} value={booking.email} onChange={e => update({ email: e.target.value })} aria-describedby={`${layout}-booking-email-help`} aria-invalid={!isValidOptionalEmail(booking.email)} />
+          <p id={`${layout}-booking-email-help`} className="mt-1.5 text-xs text-muted-foreground">{isValidOptionalEmail(booking.email) ? "Recibirás un comprobante de la solicitud. La clínica debe confirmar la cita antes de que asistas." : "Revisa el correo electrónico antes de continuar."}</p>
         </div>
       </div>
     </div>
@@ -854,7 +854,7 @@ export function PatientBookingWizard({
             </div>
           )}
           {step === 2 && dateStepContent}
-          {step === 3 && infoStepContent}
+          {step === 3 && infoStepContent("mobile")}
           {step === 4 && reviewStepContent}
         </div>
 
@@ -959,7 +959,7 @@ export function PatientBookingWizard({
         {step === 3 && (
           <div className="grid grid-cols-3 gap-5">
             <div className="citabox-panel col-span-2 p-8">
-              {infoStepContent}
+              {infoStepContent("desktop")}
               <div className="mt-6">{renderCTA()}</div>
             </div>
             <div className="flex flex-col gap-5">
