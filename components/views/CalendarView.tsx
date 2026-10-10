@@ -589,7 +589,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
 
       {/* 2. Block time form */}
       <Dialog open={blockDialogOpen} onOpenChange={(o) => !o && setBlockDialogOpen(false)}>
-        <DialogContent onCloseAutoFocus={event => { event.preventDefault(); if (detailOpenerRef.current?.isConnected) detailOpenerRef.current.focus() }} className="rounded-lg w-[95vw] max-w-sm p-0 overflow-hidden gap-0">
+        <DialogContent className="rounded-lg w-[95vw] max-w-sm p-0 overflow-hidden gap-0">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
             <DialogTitle className="text-sm font-semibold">Bloquear espacio</DialogTitle>
             <DialogDescription className="sr-only">
@@ -644,7 +644,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
 
       {/* 3. Appointment detail / actions */}
       <Dialog open={editDialogOpen} onOpenChange={(o) => !o && setEditDialogOpen(false)}>
-        <DialogContent className="rounded-lg w-[95vw] max-w-sm p-0 overflow-hidden gap-0">
+        <DialogContent onCloseAutoFocus={event => { event.preventDefault(); if (detailOpenerRef.current?.isConnected) detailOpenerRef.current.focus() }} className="rounded-lg w-[95vw] max-w-sm p-0 overflow-hidden gap-0">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
             <DialogTitle className="text-sm font-semibold">Detalle de la cita</DialogTitle>
             <DialogDescription className="sr-only">
