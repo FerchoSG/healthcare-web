@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { CITABOX_DATA_CHANGED_EVENT } from "@/lib/data-events"
 import {
@@ -122,6 +122,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
   const [referenceSearch, setReferenceSearch] = useState("")
   const [findingReference, setFindingReference] = useState(false)
   const [referenceError, setReferenceError] = useState<string | null>(null)
+  const detailOpenerRef = useRef<HTMLElement | null>(null)
 
   const findReference = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -132,6 +133,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
       return
     }
     setFindingReference(true)
+    detailOpenerRef.current = document.activeElement as HTMLElement | null
     setReferenceError(null)
     try {
       const appointment = await fetchAppointmentByReference(referenceSearch)
@@ -281,6 +283,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
   }, [])
 
   const handleAppointmentClick = useCallback((appointment: Appointment) => {
+    detailOpenerRef.current = document.activeElement as HTMLElement | null
     setSelectedAppointment(appointment)
     setEditDialogOpen(true)
   }, [])
@@ -586,7 +589,7 @@ export function CalendarView({ onNewAppointment }: CalendarViewProps) {
 
       {/* 2. Block time form */}
       <Dialog open={blockDialogOpen} onOpenChange={(o) => !o && setBlockDialogOpen(false)}>
-        <DialogContent className="rounded-lg w-[95vw] max-w-sm p-0 overflow-hidden gap-0">
+        <DialogContent onCloseAutoFocus={event => { event.preventDefault(); if (detailOpenerRef.current?.isConnected) detailOpenerRef.current.focus() }} className="rounded-lg w-[95vw] max-w-sm p-0 overflow-hidden gap-0">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
             <DialogTitle className="text-sm font-semibold">Bloquear espacio</DialogTitle>
             <DialogDescription className="sr-only">
